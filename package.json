@@ -1,0 +1,16 @@
+{
+  "name": "lit-router",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon app.js",
+    "dev": "rollup --config -w"
+  },
+  "author": "Vac1911@github.com",
+  "devDependencies": {
+    "@lit-labs/motion": "*",
+    "@rollup/plugin-node-resolve": "^13.0.0",
+    "lit": "*"
+  }
+}
