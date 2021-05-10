@@ -3,6 +3,85 @@
     factory();
 }((function () { 'use strict';
 
+    class Router {
+        controllers = new Set();
+        cache = {};
+        initialized = false;
+
+        async init() {
+            this.initialized = true;
+            for(const controller in this.controllers) {
+                controller.enter();
+            }
+        }
+
+        addController(ctrl) {
+            this.controllers.add(ctrl);
+        }
+
+        removeController(ctrl) {
+            this.controllers.delete(ctrl);
+        }
+
+        promiseCache(href) {
+            this.cache[href] = {};
+
+            return new Promise((resolve, reject) => {
+                if (window.parent != window) return reject("window not top level");
+                let frame = document.createElement("iframe");
+                frame.src = href;
+                frame.style.width = "100vw";
+                frame.style.height = "100vh";
+                frame.style.position = "absolute";
+                frame.style.left = "-150vw";
+                frame.onload = (e) => {
+                    console.log("loaded ", href);
+                    let nextContainer = frame.contentWindow.document
+                        .querySelector("dynamic-container")
+                        .shadowRoot.querySelector(".inner");
+                    window.cache[href] = {
+                        title: frame.contentWindow.document.title,
+                        html: nextContainer
+                            .querySelector("slot")
+                            .assignedElements()
+                            .map((el) => el.outerHTML)
+                            .join(""),
+                        height: nextContainer.getBoundingClientRect().height,
+                        width: nextContainer.getBoundingClientRect().width,
+                        href: href,
+                    };
+                    resolve(window.cache[href]);
+                    frame.remove();
+                };
+                document.body.appendChild(frame);
+            });
+        }
+
+        refreshCache() {
+            if (window.parent != window) return false;
+            for (const href of Object.keys(window.cache)) window.routeCache(href);
+        }
+
+        goTo(href) {
+            console.log("goTo", href, window.cache[href]);
+            const container = document.querySelector("dynamic-container");
+            container.transistion(window.cache[href]);
+            history.pushState(
+                {
+                    prev: {
+                        title: document.title,
+                        url: document.location.toString(),
+                    },
+                },
+                window.cache[href].title,
+                href
+            );
+            document.title = window.cache[href].title;
+        }
+    }
+
+    window.router = new Router();
+
     /**
      * @license
      * Copyright 2017 Google LLC
@@ -34,16 +113,33 @@
     class RouteController {
         constructor(host) {
             this.host = host;
-            this.state = "out";
+            this.state = "";
             this.enterAnimation = false;
             this.leaveAnimation = false;
+
             host.addController(this);
+            this.createReady();
+        }
+
+        createReady() {
+            this.resolveReady?.();
+            this.ready = new Promise((r) => {
+                
+                this._resolveReady = () => {console.log('controller resolving'); r(this);};
+            });
+        }
+
+        async resolveReady() {
+            this._resolveReady?.(this);
+            this._resolveReady = undefined;
         }
 
         setEnterAnimation(animation) {
             if (!animation instanceof Animation) return false;
             animation.pause();
             this.enterAnimation = animation;
+            console.log('controller ready');
+            this.resolveReady();
         }
 
         setLeaveAnimation(animation) {
@@ -53,7 +149,7 @@
         }
 
         async enter() {
-            if (!this.enterAnimation || this.state == "in") return false;
+            if (!this.enterAnimation || this.state !== "") return false;
 
             await animationFrame;
 
@@ -77,24 +173,24 @@
             this.state = "out";
             if (this.host.afterLeave) this.host.afterLeave();
 
-            this.host.removeController(this);
-            this.hostDisconnected();
+            this.host.remove();
         }
 
         hostConnected() {
+            window.router.addController(this);
             document.addEventListener("click", this.onClick.bind(this));
         }
 
         hostDisconnected() {
-            console.log("dc");
+            window.router.removeController(this);
             document.removeEventListener("click", this.onClick.bind(this));
         }
 
         onClick() {
-            if (this.state == "out") {
-                this.enter();
-            } else {
+            if (this.state == "in") {
                 this.leave();
+            } else {
+                this.enter();
             }
         }
     }
@@ -120,20 +216,12 @@
             this.route = new RouteController(this);
         }
 
-        firstUpdated() {
-            this.beforeEnter();
+        getEnterAnimation() {
+            return this.shadowRoot.querySelector('.wrapper').animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'});
         }
 
-        beforeEnter() {
-            this.route.setEnterAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
-        }
-
-        afterEnter() {
-            this.beforeLeave();
-        }
-
-        beforeLeave() {
-            this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
+        getLeaveAnimation() {
+            return this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {opacity: 0}], {duration: 300, easing: 'ease-in-out'});
         }
 
         render() {
@@ -266,6 +354,11 @@
     }
 
     customElements.define("router-link", RouterLink);
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+        console.log('init');
+        window.router.init();
+    });
 
     document.body.style.visibility = 'visible';
 
