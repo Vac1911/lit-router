@@ -3,85 +3,6 @@
     factory();
 }((function () { 'use strict';
 
-    class Router {
-        controllers = new Set();
-        cache = {};
-        initialized = false;
-
-        async init() {
-            this.initialized = true;
-            for(const controller in this.controllers) {
-                controller.enter();
-            }
-        }
-
-        addController(ctrl) {
-            this.controllers.add(ctrl);
-        }
-
-        removeController(ctrl) {
-            this.controllers.delete(ctrl);
-        }
-
-        promiseCache(href) {
-            this.cache[href] = {};
-
-            return new Promise((resolve, reject) => {
-                if (window.parent != window) return reject("window not top level");
-                let frame = document.createElement("iframe");
-                frame.src = href;
-                frame.style.width = "100vw";
-                frame.style.height = "100vh";
-                frame.style.position = "absolute";
-                frame.style.left = "-150vw";
-                frame.onload = (e) => {
-                    console.log("loaded ", href);
-                    let nextContainer = frame.contentWindow.document
-                        .querySelector("dynamic-container")
-                        .shadowRoot.querySelector(".inner");
-                    window.cache[href] = {
-                        title: frame.contentWindow.document.title,
-                        html: nextContainer
-                            .querySelector("slot")
-                            .assignedElements()
-                            .map((el) => el.outerHTML)
-                            .join(""),
-                        height: nextContainer.getBoundingClientRect().height,
-                        width: nextContainer.getBoundingClientRect().width,
-                        href: href,
-                    };
-                    resolve(window.cache[href]);
-                    frame.remove();
-                };
-                document.body.appendChild(frame);
-            });
-        }
-
-        refreshCache() {
-            if (window.parent != window) return false;
-            for (const href of Object.keys(window.cache)) window.routeCache(href);
-        }
-
-        goTo(href) {
-            console.log("goTo", href, window.cache[href]);
-            const container = document.querySelector("dynamic-container");
-            container.transistion(window.cache[href]);
-            history.pushState(
-                {
-                    prev: {
-                        title: document.title,
-                        url: document.location.toString(),
-                    },
-                },
-                window.cache[href].title,
-                href
-            );
-            document.title = window.cache[href].title;
-        }
-    }
-
-    window.router = new Router();
-
     /**
      * @license
      * Copyright 2017 Google LLC
@@ -108,24 +29,110 @@
      * SPDX-License-Identifier: BSD-3-Clause
      */var i,l,o,s,n,a;(null!==(i=(a=globalThis).litElementVersions)&&void 0!==i?i:a.litElementVersions=[]).push("3.0.0-rc.1");class h extends a$1{constructor(){super(...arguments),this.renderOptions={host:this},this.Φt=void 0;}createRenderRoot(){var t,e;const r=super.createRenderRoot();return null!==(t=(e=this.renderOptions).renderBefore)&&void 0!==t||(e.renderBefore=r.firstChild),r}update(t){const r=this.render();super.update(t),this.Φt=V(r,this.renderRoot,this.renderOptions);}connectedCallback(){var t;super.connectedCallback(),null===(t=this.Φt)||void 0===t||t.setConnected(!0);}disconnectedCallback(){var t;super.disconnectedCallback(),null===(t=this.Φt)||void 0===t||t.setConnected(!1);}render(){return w}}h.finalized=!0,h._$litElement$=!0,null===(o=(l=globalThis).litElementHydrateSupport)||void 0===o||o.call(l,{LitElement:h}),null===(n=(s=globalThis).litElementPlatformSupport)||void 0===n||n.call(s,{LitElement:h});
 
+    class Router {
+        constructor() {
+            this.controllers = new Set();
+            this.cache = new Map();
+            this.initialized = false;
+        }
+
+        async init() {
+            console.log(Array.from(this.controllers).map(c => c.ready));
+        }
+
+        startTransistion(href) {
+            Array.from(this.controllers).forEach((ctrl) => {
+                ctrl.onNavigate();
+            });
+        }
+
+        addController(ctrl) {
+            this.controllers.add(ctrl);
+        }
+
+        removeController(ctrl) {
+            this.controllers.delete(ctrl);
+        }
+
+        promiseCache(href) {
+            return new Promise((resolve, reject) => {
+                if (window.top !== window) return reject("window not top level");
+                if (this.cache.has(href)) return resolve(this.cache.get(href));
+                this.cache.set(href, {});
+                let frame = document.createElement("iframe");
+                frame.src = href;
+                frame.style.width = "100vw";
+                frame.style.height = "100vh";
+                frame.style.position = "absolute";
+                frame.style.left = "-150vw";
+                frame.onload = (e) => {
+                    console.log("loaded ", href);
+                    let nextContainer = frame.contentWindow.document.body;
+                    this.cache.set(href, {
+                        title: frame.contentWindow.document.title,
+                        html: nextContainer.innerHTML,
+                        href: href,
+                    });
+                    resolve(this.cache.get(href));
+                    frame.remove();
+                };
+                document.body.appendChild(frame);
+            });
+        }
+
+        refreshCache() {
+            if (window.parent != window) return false;
+            for (const href of Object.keys(this.cache)) this.routeCache(href);
+        }
+
+        goTo(href) {
+            const pageCache = this.cache.get(href);
+            console.log("goTo", href);
+            this.startTransistion(href);
+            document.body.insertAdjacentHTML("beforeend", pageCache.html);
+            history.pushState(
+                {
+                    prev: {
+                        title: document.title,
+                        url: document.location.toString(),
+                    },
+                },
+                pageCache.title,
+                href
+            );
+            document.title = pageCache.title;
+        }
+    }
+    window.router = new Router();
+
+    var callback = function () {
+        window.router.init();
+    };
+    if (window.top === window)
+        if (document.readyState === "complete")
+            callback();
+        else
+            document.addEventListener("DOMContentLoaded", callback);
+
     const animationFrame = () =>
         new Promise((resolve) => requestAnimationFrame(resolve));
     class RouteController {
         constructor(host) {
             this.host = host;
             this.state = "";
-            this.enterAnimation = false;
-            this.leaveAnimation = false;
-
-            host.addController(this);
             this.createReady();
+            host.addController(this);
+            this.host.updateComplete.then(() => {
+                this.triggerCallback('beforeEnter');
+                this.enter();
+                this.resolveReady();
+            });
         }
 
         createReady() {
             this.resolveReady?.();
             this.ready = new Promise((r) => {
-                
-                this._resolveReady = () => {console.log('controller resolving'); r(this);};
+                this._resolveReady = () => {console.log('controller ready'); r(this);};
             });
         }
 
@@ -138,8 +145,6 @@
             if (!animation instanceof Animation) return false;
             animation.pause();
             this.enterAnimation = animation;
-            console.log('controller ready');
-            this.resolveReady();
         }
 
         setLeaveAnimation(animation) {
@@ -148,45 +153,47 @@
             this.leaveAnimation = animation;
         }
 
+        triggerCallback(callbackName) {
+            if (this.host[callbackName]) return this.host[callbackName]();
+        }
+
         async enter() {
             if (!this.enterAnimation || this.state !== "") return false;
 
             await animationFrame;
 
             this.enterAnimation.play();
-            if (this.host.onEnter) this.host.onEnter();
+            this.triggerCallback("onEnter");
 
             await this.enterAnimation.finished;
             this.state = "in";
-            if (this.host.afterEnter) this.host.afterEnter();
+            this.triggerCallback("afterEnter");
         }
 
         async leave() {
-            if (!this.leaveAnimation || this.state == "out") return false;
+            if (!this.leaveAnimation || this.state !== "in") return false;
 
             await animationFrame;
 
             this.leaveAnimation.play();
-            if (this.host.onLeave) this.host.onLeave();
+            this.triggerCallback("onLeave");
 
             await this.leaveAnimation.finished;
             this.state = "out";
-            if (this.host.afterLeave) this.host.afterLeave();
+            this.triggerCallback("afterLeave");
 
             this.host.remove();
         }
 
         hostConnected() {
             window.router.addController(this);
-            document.addEventListener("click", this.onClick.bind(this));
         }
 
         hostDisconnected() {
             window.router.removeController(this);
-            document.removeEventListener("click", this.onClick.bind(this));
         }
 
-        onClick() {
+        onNavigate() {
             if (this.state == "in") {
                 this.leave();
             } else {
@@ -216,12 +223,16 @@
             this.route = new RouteController(this);
         }
 
-        getEnterAnimation() {
-            return this.shadowRoot.querySelector('.wrapper').animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'});
+        beforeEnter() {
+            this.route.setEnterAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
         }
 
-        getLeaveAnimation() {
-            return this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {opacity: 0}], {duration: 300, easing: 'ease-in-out'});
+        afterEnter() {
+            this.beforeLeave();
+        }
+
+        beforeLeave() {
+            this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
         }
 
         render() {
@@ -230,7 +241,6 @@
         </div>`;
         }
     }
-    customElements.define("hero-section", HeroSection);
 
     class ArticleList extends h {
         static get styles() {
@@ -281,7 +291,7 @@
         }
 
         firstUpdated() {
-            this.beforeEnter();
+            this.isRendered = true;
         }
 
         beforeEnter() {
@@ -296,8 +306,87 @@
             this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {transform: 'translateY(100%)', opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
         }
 
-        afterLeave() {
-            console.log(this);
+        render() {
+            return T`<div class="wrapper ${this.route.state}">
+            <slot></slot>
+        </div>`;
+        }
+    }
+
+    class ArticleView extends h {
+        static get styles() {
+            return r$1`
+            .wrapper {
+                background-color: #fff;
+                height: 100vh;
+            }
+            .wrapper.enter {
+                animation-name: fadeInUp;
+                animation-duration: 2s;
+            }
+            .wrapper.leave {
+                animation-name: fadeOutDown;
+                animation-duration: 2s;
+            }
+            /* Source: https://animate.style/ */
+            @keyframes fadeInUp {
+                0% {
+                    opacity: 0;
+                    transform: translate3d(0, 100%, 0);
+                }
+
+                100% {
+                    opacity: 1;
+                    transform: translate3d(0, 0, 0);
+                }
+            }
+            @keyframes fadeOutDown {
+                from {
+                    opacity: 1;
+                }
+
+                to {
+                    opacity: 0;
+                    transform: translate3d(0, 100%, 0);
+                }
+            }
+        `;
+        }
+
+        static get properties() {
+            return {};
+        }
+
+        constructor() {
+            super();
+            this.route = new RouteController(this);
+        }
+
+        setEnterAnimation() {
+            this.route.setEnterAnimation(
+                this.shadowRoot
+                    .querySelector(".wrapper")
+                    .animate(
+                        [
+                            { transform: "translateX(100%)", opacity: 0 },
+                            { opacity: 1 },
+                        ],
+                        { duration: 2000, easing: "ease-in-out" }
+                    )
+            );
+        }
+        setLeaveAnimation() {
+            this.route.setLeaveAnimation(
+                this.shadowRoot
+                    .querySelector(".wrapper")
+                    .animate(
+                        [
+                            { opacity: 1 },
+                            { transform: "translateX(100%)", opacity: 0 },
+                        ],
+                        { duration: 2000, easing: "ease-in-out" }
+                    )
+            );
         }
 
         render() {
@@ -306,7 +395,6 @@
         </div>`;
         }
     }
-    customElements.define("article-list", ArticleList);
 
     class RouterLink extends h {
         static get styles() {
@@ -339,13 +427,13 @@
 
         connectedCallback() {
             super.connectedCallback();
-            // if (window.parent != window) return false;
-            // this.addEventListener("click", this._navigate);
-            // window.promiseCache(this.href).then(() => (this.ready = true));
+            if (window.parent != window) return false;
+            this.addEventListener("click", this._navigate);
+            window.router.promiseCache(this.href).then(() => (this.ready = true));
         }
 
         _navigate() {
-            if (this.ready) window.goTo(this.href);
+            if (this.ready) window.router.goTo(this.href);
         }
 
         render() {
@@ -353,13 +441,12 @@
         }
     }
 
+    customElements.define("hero-section", HeroSection);
+    customElements.define("article-list", ArticleList);
+    customElements.define("article-view", ArticleView);
+
     customElements.define("router-link", RouterLink);
 
-    window.addEventListener('DOMContentLoaded', (event) => {
-        console.log('init');
-        window.router.init();
-    });
-
-    document.body.style.visibility = 'visible';
+    document.body.style.visibility = "visible";
 
 })));

@@ -22,12 +22,16 @@ export class HeroSection extends LitElement {
         this.route = new RouteController(this);
     }
 
-    getEnterAnimation() {
-        return this.shadowRoot.querySelector('.wrapper').animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'});
+    beforeEnter() {
+        this.route.setEnterAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
     }
 
-    getLeaveAnimation() {
-        return this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {opacity: 0}], {duration: 300, easing: 'ease-in-out'});
+    afterEnter() {
+        this.beforeLeave();
+    }
+
+    beforeLeave() {
+        this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
     }
 
     render() {
@@ -36,4 +40,3 @@ export class HeroSection extends LitElement {
         </div>`;
     }
 }
-customElements.define("hero-section", HeroSection);

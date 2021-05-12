@@ -4,18 +4,19 @@ export class RouteController {
     constructor(host) {
         this.host = host;
         this.state = "";
-        this.enterAnimation = false;
-        this.leaveAnimation = false;
-
-        host.addController(this);
         this.createReady();
+        host.addController(this);
+        this.host.updateComplete.then(() => {
+            this.triggerCallback('beforeEnter');
+            this.enter();
+            this.resolveReady();
+        });
     }
 
     createReady() {
         this.resolveReady?.();
         this.ready = new Promise((r) => {
-            
-            this._resolveReady = () => {console.log('controller resolving'); r(this)};
+            this._resolveReady = () => {console.log('controller ready'); r(this)};
         });
     }
 
@@ -28,8 +29,6 @@ export class RouteController {
         if (!animation instanceof Animation) return false;
         animation.pause();
         this.enterAnimation = animation;
-        console.log('controller ready');
-        this.resolveReady();
     }
 
     setLeaveAnimation(animation) {
@@ -38,45 +37,47 @@ export class RouteController {
         this.leaveAnimation = animation;
     }
 
+    triggerCallback(callbackName) {
+        if (this.host[callbackName]) return this.host[callbackName]();
+    }
+
     async enter() {
         if (!this.enterAnimation || this.state !== "") return false;
 
         await animationFrame;
 
         this.enterAnimation.play();
-        if (this.host.onEnter) this.host.onEnter();
+        this.triggerCallback("onEnter");
 
         await this.enterAnimation.finished;
         this.state = "in";
-        if (this.host.afterEnter) this.host.afterEnter();
+        this.triggerCallback("afterEnter");
     }
 
     async leave() {
-        if (!this.leaveAnimation || this.state == "out") return false;
+        if (!this.leaveAnimation || this.state !== "in") return false;
 
         await animationFrame;
 
         this.leaveAnimation.play();
-        if (this.host.onLeave) this.host.onLeave();
+        this.triggerCallback("onLeave");
 
         await this.leaveAnimation.finished;
         this.state = "out";
-        if (this.host.afterLeave) this.host.afterLeave();
+        this.triggerCallback("afterLeave");
 
         this.host.remove();
     }
 
     hostConnected() {
         window.router.addController(this);
-        document.addEventListener("click", this.onClick.bind(this));
     }
 
     hostDisconnected() {
         window.router.removeController(this);
-        document.removeEventListener("click", this.onClick.bind(this));
     }
 
-    onClick() {
+    onNavigate() {
         if (this.state == "in") {
             this.leave();
         } else {

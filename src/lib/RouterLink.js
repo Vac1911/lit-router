@@ -31,18 +31,16 @@ export class RouterLink extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        // if (window.parent != window) return false;
-        // this.addEventListener("click", this._navigate);
-        // window.promiseCache(this.href).then(() => (this.ready = true));
+        if (window.parent != window) return false;
+        this.addEventListener("click", this._navigate);
+        window.router.promiseCache(this.href).then(() => (this.ready = true));
     }
 
     _navigate() {
-        if (this.ready) window.goTo(this.href);
+        if (this.ready) window.router.goTo(this.href);
     }
 
     render() {
         return html`<slot></slot>`;
     }
 }
-
-customElements.define("router-link", RouterLink);

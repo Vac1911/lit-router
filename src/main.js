@@ -1,12 +1,13 @@
-import './lib/Router';
+import Router from "./lib/Router";
+import { HeroSection } from "./components/HeroSection";
+import { ArticleList } from "./components/ArticleList";
+import { ArticleView } from "./components/ArticleView";
+import { RouterLink } from "./lib/RouterLink";
 
-import './components/HeroSection';
-import './components/ArticleList';
-import './lib/RouterLink';
+customElements.define("hero-section", HeroSection);
+customElements.define("article-list", ArticleList);
+customElements.define("article-view", ArticleView);
 
-window.addEventListener('DOMContentLoaded', (event) => {
-    console.log('init')
-    window.router.init();
-});
+customElements.define("router-link", RouterLink);
 
-document.body.style.visibility = 'visible';
+document.body.style.visibility = "visible";

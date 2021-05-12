@@ -5,7 +5,8 @@ export class ArticleView extends LitElement {
     static get styles() {
         return css`
             .wrapper {
-                background-color: #edeff7;
+                background-color: #fff;
+                height: 100vh;
             }
             .wrapper.enter {
                 animation-name: fadeInUp;
@@ -49,24 +50,31 @@ export class ArticleView extends LitElement {
         this.route = new RouteController(this);
     }
 
-    firstUpdated() {
-        this.beforeEnter();
+    setEnterAnimation() {
+        this.route.setEnterAnimation(
+            this.shadowRoot
+                .querySelector(".wrapper")
+                .animate(
+                    [
+                        { transform: "translateX(100%)", opacity: 0 },
+                        { opacity: 1 },
+                    ],
+                    { duration: 2000, easing: "ease-in-out" }
+                )
+        );
     }
-
-    beforeEnter() {
-        this.route.setEnterAnimation(this.shadowRoot.querySelector('.wrapper').animate([{transform: 'translateY(100%)', opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
-    }
-
-    afterEnter() {
-        this.beforeLeave();
-    }
-
-    beforeLeave() {
-        this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {transform: 'translateY(100%)', opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
-    }
-
-    afterLeave() {
-        console.log(this);
+    setLeaveAnimation() {
+        this.route.setLeaveAnimation(
+            this.shadowRoot
+                .querySelector(".wrapper")
+                .animate(
+                    [
+                        { opacity: 1 },
+                        { transform: "translateX(100%)", opacity: 0 },
+                    ],
+                    { duration: 2000, easing: "ease-in-out" }
+                )
+        );
     }
 
     render() {
@@ -75,4 +83,3 @@ export class ArticleView extends LitElement {
         </div>`;
     }
 }
-customElements.define("article-view", ArticleView);
