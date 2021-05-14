@@ -54,6 +54,7 @@
         }
 
         async init() {
+            window.onpopstate = this.popState.bind(this);
             const promises = this.controllerArr.map((c) => c.ready);
             Promise.all(promises).then(() => {
                 console.log("initialize router");
@@ -61,6 +62,11 @@
                     controller.enter();
                 }
             });
+            history.replaceState({
+                title: document.title,
+                url: document.location.toString(),
+            }, document.title);
+            console.log(history.state);
         }
 
         doTransistion(href) {
@@ -119,15 +125,18 @@
 
             history.pushState(
                 {
-                    prev: {
-                        title: document.title,
-                        url: document.location.toString(),
-                    },
+                    title: pageCache.title,
+                    url: href,
                 },
                 pageCache.title,
                 href
             );
             document.title = pageCache.title;
+        }
+
+        popState(event) {
+            console.log(event);
+            this.goTo(event.state.url);
         }
     }
     window.router = new Router();
@@ -311,36 +320,7 @@
             .wrapper {
                 background-color: #fff;
                 height: 100vh;
-            }
-            .wrapper.enter {
-                animation-name: fadeInUp;
-                animation-duration: 2s;
-            }
-            .wrapper.leave {
-                animation-name: fadeOutDown;
-                animation-duration: 2s;
-            }
-            /* Source: https://animate.style/ */
-            @keyframes fadeInUp {
-                0% {
-                    opacity: 0;
-                    transform: translate3d(0, 100%, 0);
-                }
-
-                100% {
-                    opacity: 1;
-                    transform: translate3d(0, 0, 0);
-                }
-            }
-            @keyframes fadeOutDown {
-                from {
-                    opacity: 1;
-                }
-
-                to {
-                    opacity: 0;
-                    transform: translate3d(0, 100%, 0);
-                }
+                margin-left: 10vh;
             }
         `;
         }

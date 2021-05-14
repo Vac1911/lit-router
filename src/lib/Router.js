@@ -13,6 +13,7 @@ export default class Router {
     }
 
     async init() {
+        window.onpopstate = this.popState.bind(this);
         const promises = this.controllerArr.map((c) => c.ready);
         Promise.all(promises).then(() => {
             console.log("initialize router");
@@ -20,6 +21,11 @@ export default class Router {
                 controller.enter();
             }
         });
+        history.replaceState({
+            title: document.title,
+            url: document.location.toString(),
+        }, document.title);
+        console.log(history.state);
     }
 
     doTransistion(href) {
@@ -78,15 +84,18 @@ export default class Router {
 
         history.pushState(
             {
-                prev: {
-                    title: document.title,
-                    url: document.location.toString(),
-                },
+                title: pageCache.title,
+                url: href,
             },
             pageCache.title,
             href
         );
         document.title = pageCache.title;
+    }
+
+    popState(event) {
+        console.log(event);
+        this.goTo(event.state.url);
     }
 }
 window.router = new Router();
