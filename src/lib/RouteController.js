@@ -7,8 +7,7 @@ export class RouteController {
         this.createReady();
         host.addController(this);
         this.host.updateComplete.then(() => {
-            this.triggerCallback('beforeEnter');
-            this.enter();
+            this.triggerCallback("beforeEnter");
             this.resolveReady();
         });
     }
@@ -16,7 +15,10 @@ export class RouteController {
     createReady() {
         this.resolveReady?.();
         this.ready = new Promise((r) => {
-            this._resolveReady = () => {console.log('controller ready'); r(this)};
+            this._resolveReady = () => {
+                console.log("controller ready");
+                r(this);
+            };
         });
     }
 
@@ -38,12 +40,13 @@ export class RouteController {
     }
 
     triggerCallback(callbackName) {
-        if (this.host[callbackName]) return this.host[callbackName]();
+        if (this.host[callbackName]) {
+            // console.log("calling", callbackName, this);
+            return this.host[callbackName]();
+        }
     }
 
     async enter() {
-        if (!this.enterAnimation || this.state !== "") return false;
-
         await animationFrame;
 
         this.enterAnimation.play();
@@ -55,8 +58,6 @@ export class RouteController {
     }
 
     async leave() {
-        if (!this.leaveAnimation || this.state !== "in") return false;
-
         await animationFrame;
 
         this.leaveAnimation.play();
@@ -78,10 +79,10 @@ export class RouteController {
     }
 
     onNavigate() {
-        if (this.state == "in") {
-            this.leave();
-        } else {
-            this.enter();
+        if (this.state == "") {
+            if (this.enterAnimation) return this.enter();
+        } else if (this.state == "in") {
+            if (this.leaveAnimation) return this.leave();
         }
     }
 }

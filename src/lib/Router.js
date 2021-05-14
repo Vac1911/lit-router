@@ -8,14 +8,22 @@ export default class Router {
         this.initialized = false;
     }
 
-    async init() {
-        console.log(Array.from(this.controllers).map(c => c.ready));
+    get controllerArr() {
+        return Array.from(this.controllers);
     }
 
-    startTransistion(href) {
-        Array.from(this.controllers).forEach((ctrl) => {
-            ctrl.onNavigate();
+    async init() {
+        const promises = this.controllerArr.map((c) => c.ready);
+        Promise.all(promises).then(() => {
+            console.log("initialize router");
+            for (const controller of this.controllerArr) {
+                controller.enter();
+            }
         });
+    }
+
+    doTransistion(href) {
+        return this.controllerArr.map((ctrl) => ctrl.onNavigate(href));
     }
 
     addController(ctrl) {
@@ -57,11 +65,17 @@ export default class Router {
         for (const href of Object.keys(this.cache)) this.routeCache(href);
     }
 
-    goTo(href) {
-        const pageCache = this.cache.get(href);
+    async goTo(href) {
         console.log("goTo", href);
-        this.startTransistion(href);
+        const pageCache = this.cache.get(href),
+            exiting = this.doTransistion(href);
+
         document.body.insertAdjacentHTML("beforeend", pageCache.html);
+
+        await Promise.all(exiting);
+        this.doTransistion(href);
+
+
         history.pushState(
             {
                 prev: {
@@ -81,7 +95,5 @@ var callback = function () {
     window.router.init();
 };
 if (window.top === window)
-    if (document.readyState === "complete")
-        callback();
-    else
-        document.addEventListener("DOMContentLoaded", callback);
+    if (document.readyState === "complete") callback();
+    else document.addEventListener("DOMContentLoaded", callback);
