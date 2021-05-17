@@ -16,7 +16,6 @@ export class RouteController {
         this.resolveReady?.();
         this.ready = new Promise((r) => {
             this._resolveReady = () => {
-                console.log("controller ready");
                 r(this);
             };
         });

@@ -7,7 +7,6 @@ import { RouterLink } from "./lib/RouterLink";
 customElements.define("hero-section", HeroSection);
 customElements.define("article-list", ArticleList);
 customElements.define("article-view", ArticleView);
-
 customElements.define("router-link", RouterLink);
 
 document.body.style.visibility = "visible";

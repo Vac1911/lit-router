@@ -21,10 +21,13 @@ export default class Router {
                 controller.enter();
             }
         });
-        history.replaceState({
-            title: document.title,
-            url: document.location.toString(),
-        }, document.title);
+        history.replaceState(
+            {
+                title: document.title,
+                path: document.location.pathname,
+            },
+            document.title
+        );
         console.log(history.state);
     }
 
@@ -45,6 +48,18 @@ export default class Router {
             if (window.top !== window) return reject("window not top level");
             if (this.cache.has(href)) return resolve(this.cache.get(href));
             this.cache.set(href, {});
+            // fetch(href)
+            //     .then((res) => res.text())
+            //     .then((data) => {
+            //         console.log(data);
+            //         this.cache.set(href, {
+            //             title: frame.contentWindow.document.title,
+            //             html: data,
+            //             href: href,
+            //         });
+            //         resolve(this.cache.get(href));
+            //         resolve();
+            //     });
             let frame = document.createElement("iframe");
             frame.src = href;
             frame.style.width = "100vw";
@@ -71,31 +86,31 @@ export default class Router {
         for (const href of Object.keys(this.cache)) this.routeCache(href);
     }
 
-    async goTo(href) {
-        console.log("goTo", href);
+    async goTo(href, pushed = true) {
         const pageCache = this.cache.get(href),
             exiting = this.doTransistion(href);
+        console.log("goTo", href, this.cache, pageCache);
 
         document.body.insertAdjacentHTML("beforeend", pageCache.html);
 
         await Promise.all(exiting);
         this.doTransistion(href);
 
-
-        history.pushState(
-            {
-                title: pageCache.title,
-                url: href,
-            },
-            pageCache.title,
-            href
-        );
+        if (pushed)
+            history.pushState(
+                {
+                    title: pageCache.title,
+                    path: href,
+                },
+                pageCache.title,
+                href
+            );
         document.title = pageCache.title;
     }
 
     popState(event) {
         console.log(event);
-        this.goTo(event.state.url);
+        this.goTo(event.state.path, false);
     }
 }
 window.router = new Router();

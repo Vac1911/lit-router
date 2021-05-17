@@ -7,7 +7,7 @@ export class ArticleView extends LitElement {
             .wrapper {
                 background-color: #fff;
                 height: 100vh;
-                margin-left: 10vh;
+                margin-left: 15vh;
             }
         `;
     }
