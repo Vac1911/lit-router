@@ -5,9 +5,7 @@ export class ArticleView extends LitElement {
     static get styles() {
         return css`
             .wrapper {
-                background-color: #fff;
                 height: 100vh;
-                margin-left: 15vh;
             }
         `;
     }

@@ -5,9 +5,9 @@ export class HeroSection extends LitElement {
     static get styles() {
         return css`
             .wrapper {
-                color: white;
-                padding: 4rem 1.5rem;
-                margin: 3rem auto;
+
+                color: var(--light-0);
+                padding: 6rem 1.5rem;
                 text-align: center;
             }
         `;

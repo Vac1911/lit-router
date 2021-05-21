@@ -28,11 +28,16 @@ export default class Router {
             },
             document.title
         );
+        this.cache.set(document.location.pathname, {
+            title: document.title,
+            html: document.body.innerHTML,
+            href: document.location.pathname,
+        });
         console.log(history.state);
     }
 
     doTransistion(href) {
-        return this.controllerArr.map((ctrl) => ctrl.onNavigate(href));
+        return this.controllerArr.map((ctrl) => ctrl.doTransistion(href));
     }
 
     addController(ctrl) {
@@ -45,21 +50,28 @@ export default class Router {
 
     promiseCache(href) {
         return new Promise((resolve, reject) => {
+            if(href == document.location.pathname) return resolve();
             if (window.top !== window) return reject("window not top level");
             if (this.cache.has(href)) return resolve(this.cache.get(href));
             this.cache.set(href, {});
+
             // fetch(href)
-            //     .then((res) => res.text())
-            //     .then((data) => {
-            //         console.log(data);
+            //     .then((response) => response.text())
+            //     .then((html) => {
+            //         const nextDoc = new DOMParser().parseFromString(
+            //             html,
+            //             "text/html"
+            //         );
+            //         console.log(html, nextDoc);
             //         this.cache.set(href, {
-            //             title: frame.contentWindow.document.title,
-            //             html: data,
+            //             title: nextDoc.title,
+            //             sections: nextDoc.body,
             //             href: href,
             //         });
             //         resolve(this.cache.get(href));
-            //         resolve();
             //     });
+
+            // Consider using a shadowDom instead of hidden iframe
             let frame = document.createElement("iframe");
             frame.src = href;
             frame.style.width = "100vw";
@@ -67,11 +79,15 @@ export default class Router {
             frame.style.position = "absolute";
             frame.style.left = "-150vw";
             frame.onload = (e) => {
-                console.log("loaded ", href);
                 let nextContainer = frame.contentWindow.document.body;
+                console.log("loaded ", href, frame.contentWindow.router.controllerArr);
                 this.cache.set(href, {
                     title: frame.contentWindow.document.title,
-                    html: nextContainer.innerHTML,
+                    sections: Array.from(nextContainer.children).map(node => ({
+                        html: node.outerHTML.trim(),
+                        tagName: node.tagName,
+                        rect: node.getBoundingClientRect(),
+                    })),
                     href: href,
                 });
                 resolve(this.cache.get(href));
@@ -83,12 +99,26 @@ export default class Router {
 
     refreshCache() {
         if (window.parent != window) return false;
-        for (const href of Object.keys(this.cache)) this.routeCache(href);
+        for (const href of Object.keys(this.cache)) this.promiseCache(href);
     }
 
     async goTo(href, pushed = true) {
-        const pageCache = this.cache.get(href),
-            exiting = this.doTransistion(href);
+        const next = this.cache.get(href);
+            // const nextDoc = new DOMParser().parseFromString(
+            //     pageCache.html,
+            //     "text/html"
+            // );
+        const matches = [];
+        for(const i in this.controllerArr) {
+            const ctrl = this.controllerArr[i];
+            const matchIndex = next.sections.map(s => s.tagName).indexOf(ctrl.host.tagName);
+            if(matchIndex !== -1)
+                matches.push({currentIndex: i, nextIndex: matchIndex, tag: ctrl.host.tagName});
+        }
+        console.log(matches);
+
+        return;
+        const exiting = this.doTransistion(href);
         console.log("goTo", href, this.cache, pageCache);
 
         document.body.insertAdjacentHTML("beforeend", pageCache.html);

@@ -5,7 +5,15 @@ export class ArticleList extends LitElement {
     static get styles() {
         return css`
             .wrapper {
-                background-color: #edeff7;
+                border-top: 1px solid var(--dark-3);
+                border-bottom: 1px solid var(--dark-3);
+            }
+            ::slotted(.container) {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-auto-rows: 250px;
+                padding: 3rem;
+                gap: 3rem;
             }
         `;
     }
@@ -20,7 +28,17 @@ export class ArticleList extends LitElement {
     }
 
     beforeEnter() {
-        this.route.setEnterAnimation(this.shadowRoot.querySelector('.wrapper').animate([{transform: 'translateY(100%)', opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
+        this.route.setEnterAnimation(
+            this.shadowRoot
+                .querySelector(".wrapper")
+                .animate(
+                    [
+                        { transform: "translateY(100%)", opacity: 0 },
+                        { opacity: 1 },
+                    ],
+                    { duration: 300, easing: "ease-in-out" }
+                )
+        );
     }
 
     afterEnter() {
@@ -28,7 +46,17 @@ export class ArticleList extends LitElement {
     }
 
     beforeLeave() {
-        this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {transform: 'translateY(100%)', opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
+        this.route.setLeaveAnimation(
+            this.shadowRoot
+                .querySelector(".wrapper")
+                .animate(
+                    [
+                        { opacity: 1 },
+                        { transform: "translateY(100%)", opacity: 0 },
+                    ],
+                    { duration: 300, easing: "ease-in-out" }
+                )
+        );
     }
 
     render() {

@@ -77,11 +77,16 @@ export class RouteController {
         window.router.removeController(this);
     }
 
-    onNavigate() {
+    doTransistion(href) {
+        if (!this.shouldTransistion()) return false;
         if (this.state == "") {
             if (this.enterAnimation) return this.enter();
         } else if (this.state == "in") {
             if (this.leaveAnimation) return this.leave();
         }
+    }
+
+    shouldTransistion() {
+        return !(this.host.tagName == "NAV-SECTION");
     }
 }
