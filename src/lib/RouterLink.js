@@ -6,12 +6,8 @@ export class RouterLink extends LitElement {
         /* Just some styles to make this element look like <a>*/
             :host {
                 color: #0d6efd;
-                text-decoration: underline;
                 cursor: pointer;
                 display: inline-block;
-            }
-            :host:hover {
-                color: #0a58ca;
             }
         `;
     }

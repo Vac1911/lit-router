@@ -32,3 +32,7 @@ body {
 .border-dark-3 {
     border: 1px solid var(--dark-3);
 }
+
+router-link:hover {
+    text-decoration: underline;
+}

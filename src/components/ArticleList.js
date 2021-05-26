@@ -11,7 +11,7 @@ export class ArticleList extends LitElement {
             ::slotted(.container) {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                grid-auto-rows: 250px;
+                grid-auto-rows: 1fr;
                 padding: 3rem;
                 gap: 3rem;
             }

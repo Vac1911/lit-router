@@ -2,14 +2,23 @@ import { html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 
 export default class Router {
-    constructor() {
+    constructor(_rootSelector) {
         this.controllers = new Set();
         this.cache = new Map();
         this.initialized = false;
+        // Do not make body the rootSelector!
+        this.rootSelector = _rootSelector;
     }
 
     get controllerArr() {
         return Array.from(this.controllers);
+    }
+
+    // TODO: Convert to something promise based
+    hasPendingCache() {
+        return !Array.from(this.cache.values()).every(
+            (c) => Object.keys(c).length > 0
+        );
     }
 
     async init() {
@@ -21,6 +30,7 @@ export default class Router {
                 controller.enter();
             }
         });
+
         history.replaceState(
             {
                 title: document.title,
@@ -28,16 +38,8 @@ export default class Router {
             },
             document.title
         );
-        this.cache.set(document.location.pathname, {
-            title: document.title,
-            html: document.body.innerHTML,
-            href: document.location.pathname,
-        });
-        console.log(history.state);
-    }
 
-    doTransistion(href) {
-        return this.controllerArr.map((ctrl) => ctrl.doTransistion(href));
+        this.selfCache();
     }
 
     addController(ctrl) {
@@ -50,28 +52,13 @@ export default class Router {
 
     promiseCache(href) {
         return new Promise((resolve, reject) => {
-            if(href == document.location.pathname) return resolve();
             if (window.top !== window) return reject("window not top level");
             if (this.cache.has(href)) return resolve(this.cache.get(href));
+            if (href == document.location.pathname) return resolve();
+
             this.cache.set(href, {});
 
-            // fetch(href)
-            //     .then((response) => response.text())
-            //     .then((html) => {
-            //         const nextDoc = new DOMParser().parseFromString(
-            //             html,
-            //             "text/html"
-            //         );
-            //         console.log(html, nextDoc);
-            //         this.cache.set(href, {
-            //             title: nextDoc.title,
-            //             sections: nextDoc.body,
-            //             href: href,
-            //         });
-            //         resolve(this.cache.get(href));
-            //     });
-
-            // Consider using a shadowDom instead of hidden iframe
+            // Consider using a hidden shadowDom instead of hidden iframe. Cannot use DOMParser to get a DOMRect.
             let frame = document.createElement("iframe");
             frame.src = href;
             frame.style.width = "100vw";
@@ -79,71 +66,119 @@ export default class Router {
             frame.style.position = "absolute";
             frame.style.left = "-150vw";
             frame.onload = (e) => {
-                let nextContainer = frame.contentWindow.document.body;
-                console.log("loaded ", href, frame.contentWindow.router.controllerArr);
-                this.cache.set(href, {
+                let nextContainer = frame.contentWindow.document.querySelector(
+                    this.rootSelector
+                );
+                console.log(
+                    "loaded ",
+                    href,
+                    frame.contentWindow.router.controllerArr
+                );
+                const frameCache = {
                     title: frame.contentWindow.document.title,
-                    sections: Array.from(nextContainer.children).map(node => ({
-                        html: node.outerHTML.trim(),
-                        tagName: node.tagName,
-                        rect: node.getBoundingClientRect(),
-                    })),
+                    sections: Array.from(nextContainer.children).map(
+                        (node) => ({
+                            html: node.outerHTML.trim(),
+                            tagName: node.tagName,
+                            rect: node.getBoundingClientRect(),
+                        })
+                    ),
                     href: href,
-                });
-                resolve(this.cache.get(href));
+                };
                 frame.remove();
+                this.cache.set(href, frameCache);
+                resolve(frameCache);
             };
             document.body.appendChild(frame);
         });
     }
 
-    refreshCache() {
+    selfCache() {
+        if (this.hasPendingCache()) {
+            setTimeout(this.selfCache.bind(this), 100);
+            return;
+        }
+
+        this.cache.set(document.location.pathname, {
+            title: document.title,
+            sections: Array.from(
+                document.querySelector(this.rootSelector).children
+            ).map((node) => ({
+                html: node.outerHTML.trim(),
+                tagName: node.tagName,
+                rect: node.getBoundingClientRect(),
+            })),
+            href: document.location.pathname,
+        });
+    }
+
+    refreshCache(...routes) {
         if (window.parent != window) return false;
-        for (const href of Object.keys(this.cache)) this.promiseCache(href);
+
+        if (!routes.length) routes = Object.keys(this.cache);
+
+        for (const href in routes) {
+            if (this.cache.has(href)) this.cache.delete(href);
+            this.promiseCache(href);
+        }
     }
 
     async goTo(href, pushed = true) {
         const next = this.cache.get(href);
-            // const nextDoc = new DOMParser().parseFromString(
-            //     pageCache.html,
-            //     "text/html"
-            // );
         const matches = [];
-        for(const i in this.controllerArr) {
+        console.log(next, href);
+
+        // Compare current sections with next sections to seperate sections that don't need to transistion
+        for (const i in this.controllerArr) {
             const ctrl = this.controllerArr[i];
-            const matchIndex = next.sections.map(s => s.tagName).indexOf(ctrl.host.tagName);
-            if(matchIndex !== -1)
-                matches.push({currentIndex: i, nextIndex: matchIndex, tag: ctrl.host.tagName});
+            const matchIndex = next.sections
+                .map((s) => s.tagName)
+                .indexOf(ctrl.host.tagName);
+            if (matchIndex !== -1)
+                matches.push({
+                    currentIndex: parseInt(i),
+                    nextIndex: matchIndex,
+                    tag: ctrl.host.tagName,
+                });
         }
-        console.log(matches);
 
-        return;
-        const exiting = this.doTransistion(href);
-        console.log("goTo", href, this.cache, pageCache);
-
-        document.body.insertAdjacentHTML("beforeend", pageCache.html);
-
-        await Promise.all(exiting);
-        this.doTransistion(href);
-
-        if (pushed)
-            history.pushState(
-                {
-                    title: pageCache.title,
-                    path: href,
-                },
-                pageCache.title,
-                href
+        // Get entering and exiting sections, removing sections that dont need to transistion.
+        let entering = next.sections.filter(
+                (n, i) => !matches.map((m) => m.nextIndex).includes(i)
+            ),
+            exiting = this.controllerArr.filter(
+                (n, i) => !matches.map((m) => m.currentIndex).includes(i)
             );
-        document.title = pageCache.title;
+
+        const exitPromise = Promise.all(
+            exiting.map((el) => el.leave())
+        );
+
+        for (const i in entering) {
+            let section = entering[i];
+            // TODO: insert sections so that they are in the correct order
+            let el = document
+                .querySelector(this.rootSelector)
+                .insertAdjacentHTML("beforeend", section.html);
+        }
+        await exitPromise;
+
+        const nextState = { title: next.title, path: href };
+        if (pushed) history.pushState(nextState, next.title, href);
+        document.title = next.title;
+
+        await this.controllerArr.map((c) => c.ready);
+
+        await Promise.all(this.controllerArr.map((el) => el.enter()));
     }
 
     popState(event) {
-        console.log(event);
-        this.goTo(event.state.path, false);
+        if (this.cache.has()) this.goTo(event.state.path, false);
+        else document.location.reload();
     }
 }
-window.router = new Router();
+
+window.router = new Router("#app");
 
 var callback = function () {
     window.router.init();
