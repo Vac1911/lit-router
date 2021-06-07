@@ -10,12 +10,12 @@ router.get("/", function (req, res, next) {
 
 /* GET view article. */
 router.get("/articles/:id", function (req, res, next) {
-    res.render("article/show", { article: Articles.find((a) => a.id == req.params.id), DateTime: luxon.DateTime, root: '/home/andrew/Documents/lit-router/views' });
+    res.render("article/show", { article: Articles.find((a) => a.id == req.params.id), DateTime: luxon.DateTime });
 });
 
 /* GET list articles. */
 router.get("/articles", function (req, res, next) {
-    res.render("article/list", { articles: Articles, DateTime: luxon.DateTime, root: '/home/andrew/Documents/lit-router/views' });
+    res.render("article/list", { articles: Articles, DateTime: luxon.DateTime });
 });
 
 

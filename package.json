@@ -15,13 +15,16 @@
     "ejs": "~2.6.1",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
+    "lodash": "^4.17.21",
     "luxon": "^1.27.0",
     "morgan": "~1.9.1",
     "prompt": "^1.1.0"
   },
   "devDependencies": {
-    "@lit-labs/motion": "*",
+    "rollup": "^2.50.4",
+    "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
-    "lit": "*"
+    "lit": "^2.0.0-rc.2",
+    "@lit-labs/motion": "1.0.0-rc.2"
   }
 }

@@ -1,6 +1,3 @@
-import { html } from "lit";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
-
 export default class Router {
     constructor(_rootSelector) {
         this.controllers = new Set();
@@ -77,10 +74,11 @@ export default class Router {
                 const frameCache = {
                     title: frame.contentWindow.document.title,
                     sections: Array.from(nextContainer.children).map(
-                        (node) => ({
+                        (node, i) => ({
                             html: node.outerHTML.trim(),
                             tagName: node.tagName,
                             rect: node.getBoundingClientRect(),
+                            index: i
                         })
                     ),
                     href: href,
@@ -128,21 +126,23 @@ export default class Router {
         const matches = [];
         console.log(next, href);
 
-        // Compare current sections with next sections to seperate sections that don't need to transistion
+        // Compare current sections with next sections to find sections that should relocate instead of transition
         for (const i in this.controllerArr) {
             const ctrl = this.controllerArr[i];
             const matchIndex = next.sections
                 .map((s) => s.tagName)
                 .indexOf(ctrl.host.tagName);
-            if (matchIndex !== -1)
+            if (matchIndex !== -1) {
+                ctrl.relocate(next.sections[matchIndex].rect);
                 matches.push({
                     currentIndex: parseInt(i),
                     nextIndex: matchIndex,
                     tag: ctrl.host.tagName,
                 });
+            }
         }
 
-        // Get entering and exiting sections, removing sections that dont need to transistion.
+        // Get entering and exiting sections, removing sections that dont need to transition.
         let entering = next.sections.filter(
                 (n, i) => !matches.map((m) => m.nextIndex).includes(i)
             ),
@@ -157,9 +157,20 @@ export default class Router {
         for (const i in entering) {
             let section = entering[i];
             // TODO: insert sections so that they are in the correct order
-            let el = document
-                .querySelector(this.rootSelector)
-                .insertAdjacentHTML("beforeend", section.html);
+            console.log('ENTERING', section);
+            let root = document.querySelector(this.rootSelector);
+            let el;
+
+            if(section.index < 1 || root.children.length === 0)
+                el = root.insertAdjacentHTML("afterbegin", section.html);
+            else if(section.index > root.children.length - 1)
+                el = root.insertAdjacentHTML("beforeend", section.html);
+            else {
+                console.log(section.index, Array.from(root.children));
+                el = root.children[section.index - 1].insertAdjacentHTML("afterend", section.html);
+            }
+
+                // .insertAdjacentHTML("beforeend", section.html);
         }
         await exitPromise;
 

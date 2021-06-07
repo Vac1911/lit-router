@@ -4,10 +4,12 @@ import { RouteController } from "../lib/RouteController";
 export class HeroSection extends LitElement {
     static get styles() {
         return css`
+        :host{
+            display: block;
+            padding: 6rem 1.5rem;
+        }
             .wrapper {
-
                 color: var(--light-0);
-                padding: 6rem 1.5rem;
                 text-align: center;
             }
         `;

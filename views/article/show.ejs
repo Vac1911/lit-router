@@ -15,7 +15,7 @@
 
 <body style="visibility: hidden; background-color: var(--dark-1); position: relative">
     <div id="app">
-        <%- include(root+'/include/navigation'); -%>
+        <%- include('../include/navigation'); -%>
         <article-view>
             <div class="container p-5">
                 <div class="p-4 rounded" style="background-color: var(--dark-2);">
@@ -25,7 +25,8 @@
                     <div class="mb-3 text-muted">
                         <%= DateTime.fromSeconds(article.created_at).toFormat('LLL dd yyyy') %>
                     </div>
-                    <p><%- article.body.replaceAll("\n", '</p><p>' ) %></p>
+                    <p><%- article.body %></p>
+                    <p><%# article.body.replaceAll("\n", '</p><p>' ) %></p>
                 </div>
             </div>
         </article-view>

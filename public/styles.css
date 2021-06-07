@@ -10,6 +10,12 @@ body {
     color: var(--light-1);
     /* Idk what this is but its stopping things from bouncing around too much on reload (chrome only) */
     overflow-anchor: none;
+    overflow-x: hidden;
+    overflow-y: overlay;
+}
+
+svg {
+    height: 100%;
 }
 
 .nav-link, .navbar-brand {

@@ -175,12 +175,14 @@
                 const matchIndex = next.sections
                     .map((s) => s.tagName)
                     .indexOf(ctrl.host.tagName);
-                if (matchIndex !== -1)
+                if (matchIndex !== -1) {
+                    console.log('match', ctrl.host.getBoundingClientRect(), next.sections[matchIndex]);
                     matches.push({
                         currentIndex: parseInt(i),
                         nextIndex: matchIndex,
                         tag: ctrl.host.tagName,
                     });
+                }
             }
 
             // Get entering and exiting sections, removing sections that dont need to transistion.

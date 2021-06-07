@@ -1,3 +1,6 @@
+import {transformProps} from "@lit-labs/motion";
+import {transform, pick} from "lodash";
+
 const animationFrame = () =>
     new Promise((resolve) => requestAnimationFrame(resolve));
 export class RouteController {
@@ -71,15 +74,39 @@ export class RouteController {
         this.host.remove();
     }
 
+    async relocate(nextRect) {
+        const props = ['left', 'top', 'width', 'height'];
+        let startRect = transform(pick(this.host.getBoundingClientRect(), props), (result, val, key) => result[key] = val + 'px');
+        let finalRect = transform(pick(nextRect, props), (result, val, key) => result[key] = val + 'px');
+        startRect.position = finalRect.position = 'absolute'
+        // TODO: compare startRect and finalRect, to ensure that are not the same
+        console.log(startRect, finalRect);
+
+        const relocateAnimation = this.host.shadowRoot
+            .querySelector(".wrapper")
+            .animate(
+                [
+                    startRect,
+                    finalRect,
+                ],
+                { duration: 300, easing: "ease-in-out" }
+            );
+        // for(const prop of ['left', 'top', 'width', 'height']) {
+        //     diff[prop] = transformProps[prop](startRect[prop], finalRect[prop])
+        // }
+        //
+        // return diff;
+    }
+
+    shouldRelocate() {
+        return true;
+    }
+
     hostConnected() {
         window.router.addController(this);
     }
 
     hostDisconnected() {
         window.router.removeController(this);
-    }
-
-    shouldTransistion() {
-        return true;
     }
 }
