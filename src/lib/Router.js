@@ -101,10 +101,11 @@ export default class Router {
             title: document.title,
             sections: Array.from(
                 document.querySelector(this.rootSelector).children
-            ).map((node) => ({
+            ).map((node, i) => ({
                 html: node.outerHTML.trim(),
                 tagName: node.tagName,
                 rect: node.getBoundingClientRect(),
+                index: i,
             })),
             href: document.location.pathname,
         });
@@ -122,6 +123,8 @@ export default class Router {
     }
 
     async goTo(href, pushed = true) {
+        if(href === document.location.pathname)
+            return false;
         const next = this.cache.get(href);
         const matches = [];
         console.log(next, href);
@@ -166,7 +169,7 @@ export default class Router {
             else if(section.index > root.children.length - 1)
                 el = root.insertAdjacentHTML("beforeend", section.html);
             else {
-                console.log(section.index, Array.from(root.children));
+                console.log(section, section.index);
                 el = root.children[section.index - 1].insertAdjacentHTML("afterend", section.html);
             }
 
