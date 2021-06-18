@@ -5,8 +5,7 @@ export class NavSection extends LitElement {
     static get styles() {
         return css`
             .wrapper {
-                background-color: var(--dark-2);
-                color: var(--light-0);
+                display: flex;
             }
         `;
     }

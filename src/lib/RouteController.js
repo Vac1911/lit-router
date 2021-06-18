@@ -78,11 +78,11 @@ export class RouteController {
         const props = ['left', 'top', 'width', 'height'];
         let startRect = transform(pick(this.host.getBoundingClientRect(), props), (result, val, key) => result[key] = val + 'px');
         let finalRect = transform(pick(nextRect, props), (result, val, key) => result[key] = val + 'px');
-        startRect.position = finalRect.position = 'absolute'
-        // TODO: compare startRect and finalRect, to ensure that are not the same
-        console.log(startRect, finalRect);
+        startRect.position = finalRect.position = 'absolute';
 
-        const relocateAnimation = this.host.shadowRoot
+        // If the start and final rects are not the same, do play the animation
+        if(!Object.keys(startRect).every(key => startRect[key] === finalRect[key])) {
+            const relocateAnimation = this.host.shadowRoot
             .querySelector(".wrapper")
             .animate(
                 [
@@ -91,11 +91,8 @@ export class RouteController {
                 ],
                 { duration: 300, easing: "ease-in-out" }
             );
-        // for(const prop of ['left', 'top', 'width', 'height']) {
-        //     diff[prop] = transformProps[prop](startRect[prop], finalRect[prop])
-        // }
-        //
-        // return diff;
+            console.log(`animating [${this.host.tagName}]`, startRect, finalRect);
+        }
     }
 
     shouldRelocate() {

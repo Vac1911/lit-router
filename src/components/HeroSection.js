@@ -6,12 +6,9 @@ export class HeroSection extends LitElement {
         return css`
         :host{
             display: block;
-            padding: 6rem 1.5rem;
-            border: 1px solid lime;
         }
             .wrapper {
                 color: var(--light-0);
-                text-align: center;
             }
         `;
     }

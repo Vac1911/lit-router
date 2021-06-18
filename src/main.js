@@ -1,3 +1,5 @@
+import './scss/app.scss';
+
 import Router from "./lib/Router";
 import { HeroSection } from "./components/HeroSection";
 import { ArticleList } from "./components/ArticleList";

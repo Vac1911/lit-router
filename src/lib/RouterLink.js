@@ -7,7 +7,7 @@ export class RouterLink extends LitElement {
             :host {
                 color: #0d6efd;
                 cursor: pointer;
-                display: inline-block;
+                display: inline;
             }
         `;
     }

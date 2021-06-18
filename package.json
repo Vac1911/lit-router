@@ -21,10 +21,12 @@
     "prompt": "^1.1.0"
   },
   "devDependencies": {
-    "rollup": "^2.50.4",
+    "@lit-labs/motion": "1.0.0-rc.2",
+    "@primer/css": "^17.3.0",
     "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
     "lit": "^2.0.0-rc.2",
-    "@lit-labs/motion": "1.0.0-rc.2"
+    "rollup": "^2.50.4",
+    "rollup-plugin-sass": "^1.2.2"
   }
 }

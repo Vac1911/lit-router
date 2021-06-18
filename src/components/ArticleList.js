@@ -4,11 +4,11 @@ import { RouteController } from "../lib/RouteController";
 export class ArticleList extends LitElement {
     static get styles() {
         return css`
-            .wrapper {
-                border-top: 1px solid var(--dark-3);
-                border-bottom: 1px solid var(--dark-3);
+            :host {
+                border-top: 1px solid var(--color-border-primary);
+                display: block;
             }
-            ::slotted(.container) {
+            .wrapper {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 grid-auto-rows: 1fr;
