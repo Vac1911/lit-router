@@ -76,14 +76,13 @@ export class RouteController {
 
     async relocate(nextRect) {
         const props = ['left', 'top', 'width', 'height'];
-        let startRect = transform(pick(this.host.getBoundingClientRect(), props), (result, val, key) => result[key] = val + 'px');
+        let startRect = transform(pick(this.host.wrapper.getBoundingClientRect(), props), (result, val, key) => result[key] = val + 'px');
         let finalRect = transform(pick(nextRect, props), (result, val, key) => result[key] = val + 'px');
         startRect.position = finalRect.position = 'absolute';
 
         // If the start and final rects are not the same, do play the animation
         if(!Object.keys(startRect).every(key => startRect[key] === finalRect[key])) {
-            const relocateAnimation = this.host.shadowRoot
-            .querySelector(".wrapper")
+            const relocateAnimation = this.host.wrapper
             .animate(
                 [
                     startRect,

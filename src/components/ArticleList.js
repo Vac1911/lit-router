@@ -27,10 +27,13 @@ export class ArticleList extends LitElement {
         this.route = new RouteController(this);
     }
 
+    get wrapper () {
+        return this.shadowRoot.querySelector('.wrapper');
+    }
+
     beforeEnter() {
         this.route.setEnterAnimation(
-            this.shadowRoot
-                .querySelector(".wrapper")
+            this.wrapper
                 .animate(
                     [
                         { transform: "translateY(100%)", opacity: 0 },

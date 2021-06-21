@@ -19,8 +19,12 @@ export class ArticleView extends LitElement {
         this.route = new RouteController(this);
     }
 
+    get wrapper () {
+        return this.shadowRoot.querySelector('.wrapper');
+    }
+
     beforeEnter() {
-        this.route.setEnterAnimation(this.shadowRoot.querySelector('.wrapper').animate([{transform: 'translateX(100%)', opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
+        this.route.setEnterAnimation(this.wrapper.animate([{transform: 'translateX(100%)', opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
     }
 
     afterEnter() {

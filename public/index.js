@@ -84,7 +84,7 @@
                             (node, i) => ({
                                 html: node.outerHTML.trim(),
                                 tagName: node.tagName,
-                                rect: node.getBoundingClientRect(),
+                                rect: node.wrapper.getBoundingClientRect(),
                                 index: i
                             })
                         ),
@@ -111,7 +111,7 @@
                 ).map((node, i) => ({
                     html: node.outerHTML.trim(),
                     tagName: node.tagName,
-                    rect: node.getBoundingClientRect(),
+                    rect: node.wrapper.getBoundingClientRect(),
                     index: i,
                 })),
                 href: document.location.pathname,
@@ -17584,14 +17584,13 @@
 
         async relocate(nextRect) {
             const props = ['left', 'top', 'width', 'height'];
-            let startRect = lodash$1.exports.transform(lodash$1.exports.pick(this.host.getBoundingClientRect(), props), (result, val, key) => result[key] = val + 'px');
+            let startRect = lodash$1.exports.transform(lodash$1.exports.pick(this.host.wrapper.getBoundingClientRect(), props), (result, val, key) => result[key] = val + 'px');
             let finalRect = lodash$1.exports.transform(lodash$1.exports.pick(nextRect, props), (result, val, key) => result[key] = val + 'px');
             startRect.position = finalRect.position = 'absolute';
 
             // If the start and final rects are not the same, do play the animation
             if(!Object.keys(startRect).every(key => startRect[key] === finalRect[key])) {
-                const relocateAnimation = this.host.shadowRoot
-                .querySelector(".wrapper")
+                const relocateAnimation = this.host.wrapper
                 .animate(
                     [
                         startRect,
@@ -17637,8 +17636,12 @@
             this.route = new RouteController(this);
         }
 
+        get wrapper () {
+            return this.shadowRoot.querySelector('.wrapper');
+        }
+
         beforeEnter() {
-            this.route.setEnterAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
+            this.route.setEnterAnimation(this.wrapper.animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
         }
 
         afterEnter() {
@@ -17682,10 +17685,13 @@
             this.route = new RouteController(this);
         }
 
+        get wrapper () {
+            return this.shadowRoot.querySelector('.wrapper');
+        }
+
         beforeEnter() {
             this.route.setEnterAnimation(
-                this.shadowRoot
-                    .querySelector(".wrapper")
+                this.wrapper
                     .animate(
                         [
                             { transform: "translateY(100%)", opacity: 0 },
@@ -17739,8 +17745,12 @@
             this.route = new RouteController(this);
         }
 
+        get wrapper () {
+            return this.shadowRoot.querySelector('.wrapper');
+        }
+
         beforeEnter() {
-            this.route.setEnterAnimation(this.shadowRoot.querySelector('.wrapper').animate([{transform: 'translateX(100%)', opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
+            this.route.setEnterAnimation(this.wrapper.animate([{transform: 'translateX(100%)', opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
         }
 
         afterEnter() {
@@ -17771,15 +17781,19 @@
             return {};
         }
 
+
         constructor() {
             super();
             this.route = new RouteController(this);
         }
 
+        get wrapper () {
+            return this.shadowRoot.querySelector('.wrapper');
+        }
+
         beforeEnter() {
             this.route.setEnterAnimation(
-                this.shadowRoot
-                    .querySelector(".wrapper")
+                this.wrapper
                     .animate([{ opacity: 0 }, { opacity: 1 }], {
                         duration: 300,
                         easing: "ease-in-out",

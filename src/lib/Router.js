@@ -77,7 +77,7 @@ export default class Router {
                         (node, i) => ({
                             html: node.outerHTML.trim(),
                             tagName: node.tagName,
-                            rect: node.getBoundingClientRect(),
+                            rect: node.wrapper.getBoundingClientRect(),
                             index: i
                         })
                     ),
@@ -104,7 +104,7 @@ export default class Router {
             ).map((node, i) => ({
                 html: node.outerHTML.trim(),
                 tagName: node.tagName,
-                rect: node.getBoundingClientRect(),
+                rect: node.wrapper.getBoundingClientRect(),
                 index: i,
             })),
             href: document.location.pathname,

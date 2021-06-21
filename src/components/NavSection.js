@@ -14,15 +14,19 @@ export class NavSection extends LitElement {
         return {};
     }
 
+
     constructor() {
         super();
         this.route = new RouteController(this);
     }
 
+    get wrapper () {
+        return this.shadowRoot.querySelector('.wrapper');
+    }
+
     beforeEnter() {
         this.route.setEnterAnimation(
-            this.shadowRoot
-                .querySelector(".wrapper")
+            this.wrapper
                 .animate([{ opacity: 0 }, { opacity: 1 }], {
                     duration: 300,
                     easing: "ease-in-out",
