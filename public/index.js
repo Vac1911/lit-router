@@ -10,8 +10,8 @@
             this.controllers = new Set();
             this.cache = new Map();
             this.initialized = false;
-            // Do not make body the rootSelector!
-            this.rootSelector = _rootSelector;
+            this.rootSelector = _rootSelector; // Do not make body the rootSelector!
+            this.isReflection = (window.top !== window);
         }
 
         get controllerArr() {
@@ -26,6 +26,8 @@
         }
 
         async init() {
+            if (this.isReflection) return this.skipAnimation();
+
             window.onpopstate = this.popState.bind(this);
             const promises = this.controllerArr.map((c) => c.ready);
             Promise.all(promises).then(() => {
@@ -46,6 +48,16 @@
             this.selfCache();
         }
 
+        skipAnimation() {
+            const promises = this.controllerArr.map((c) => c.ready);
+            Promise.all(promises).then(() => {
+                console.log("initialize router", document.location);
+                // for (const controller of this.controllerArr) {
+                //     // controller.enter();
+                // }
+            });
+        }
+
         addController(ctrl) {
             this.controllers.add(ctrl);
         }
@@ -56,7 +68,7 @@
 
         promiseCache(href) {
             return new Promise((resolve, reject) => {
-                if (window.top !== window) return reject("window not top level");
+                if (this.isReflection) return reject("window not top level");
                 if (this.cache.has(href)) return resolve(this.cache.get(href));
                 if (href == document.location.pathname) return resolve();
 
@@ -70,16 +82,16 @@
                 frame.style.position = "absolute";
                 frame.style.left = "-150vw";
                 frame.onload = (e) => {
-                    let nextContainer = frame.contentWindow.document.querySelector(
+                    let nextContainer = frame.contentDocument.querySelector(
                         this.rootSelector
                     );
                     console.log(
                         "loaded ",
                         href,
-                        frame.contentWindow.router.controllerArr
+                        frame.contentDocument.router.controllerArr
                     );
                     const frameCache = {
-                        title: frame.contentWindow.document.title,
+                        title: frame.contentDocument.title,
                         sections: Array.from(nextContainer.children).map(
                             (node, i) => ({
                                 html: node.outerHTML.trim(),
@@ -119,7 +131,7 @@
         }
 
         refreshCache(...routes) {
-            if (window.parent != window) return false;
+            if (this.isReflection) return false;
 
             if (!routes.length) routes = Object.keys(this.cache);
 
@@ -133,7 +145,7 @@
             if(href === document.location.pathname)
                 return false;
             const next = this.cache.get(href);
-            const matches = [];
+            const relocating = [];
             console.log(next, href);
 
             // Compare current sections with next sections to find sections that should relocate instead of transition
@@ -143,8 +155,8 @@
                     .map((s) => s.tagName)
                     .indexOf(ctrl.host.tagName);
                 if (matchIndex !== -1) {
-                    ctrl.relocate(next.sections[matchIndex].rect);
-                    matches.push({
+                    ctrl.relocate(next.sections[matchIndex]);
+                    relocating.push({
                         currentIndex: parseInt(i),
                         nextIndex: matchIndex,
                         tag: ctrl.host.tagName,
@@ -152,22 +164,24 @@
                 }
             }
 
-            // Get entering and exiting sections, removing sections that dont need to transition.
+            // Get entering and exiting sections, removing sections that dont need to enter/leave.
             let entering = next.sections.filter(
-                    (n, i) => !matches.map((m) => m.nextIndex).includes(i)
+                    (n, i) => !relocating.map((m) => m.nextIndex).includes(i)
                 ),
                 exiting = this.controllerArr.filter(
-                    (n, i) => !matches.map((m) => m.currentIndex).includes(i)
+                    (n, i) => !relocating.map((m) => m.currentIndex).includes(i)
                 );
 
             const exitPromise = Promise.all(
                 exiting.map((el) => el.leave())
             );
 
+            await exitPromise;
+
+            console.log('continue');
+
             for (const i in entering) {
                 let section = entering[i];
-                // TODO: insert sections so that they are in the correct order
-                console.log('ENTERING', section);
                 let root = document.querySelector(this.rootSelector);
                 let el;
 
@@ -182,7 +196,6 @@
 
                     // .insertAdjacentHTML("beforeend", section.html);
             }
-            await exitPromise;
 
             const nextState = { title: next.title, path: href };
             if (pushed) history.pushState(nextState, next.title, href);
@@ -194,19 +207,18 @@
         }
 
         popState(event) {
-            if (this.cache.has()) this.goTo(event.state.path, false);
+            if (this.cache.has(event.state.path)) this.goTo(event.state.path, false);
             else document.location.reload();
         }
     }
 
-    window.router = new Router("#app");
+    document.router = new Router("#app");
 
     var callback = function () {
-        window.router.init();
+        document.router.init();
     };
-    if (window.top === window)
-        if (document.readyState === "complete") callback();
-        else document.addEventListener("DOMContentLoaded", callback);
+    if (document.readyState === "complete") callback();
+    else document.addEventListener("DOMContentLoaded", callback);
 
     /**
      * @license
@@ -17537,16 +17549,16 @@
             this._resolveReady = undefined;
         }
 
-        setEnterAnimation(animation) {
-            if (!animation instanceof Animation) return false;
-            animation.pause();
-            this.enterAnimation = animation;
+        setEnterAnimation({ keyframes, options = {} }) {
+            this.enterAnimation = this.host.wrapper.animate(keyframes, options);
+            this.enterAnimation.pause();
+            if(document.router.isReflection) this.enterAnimation.finish();
         }
 
-        setLeaveAnimation(animation) {
-            if (!animation instanceof Animation) return false;
-            animation.pause();
-            this.leaveAnimation = animation;
+        setLeaveAnimation({ keyframes, options = {} }) {;
+            this.leaveAnimation = this.host.wrapper.animate(keyframes, options);
+            this.leaveAnimation.pause();
+            if(document.router.isReflection) this.leaveAnimation.finish();
         }
 
         triggerCallback(callbackName) {
@@ -17557,8 +17569,11 @@
         }
 
         async enter() {
-            if(this.state == "in") return false;
+            if(this.state === "in") return false;
             await animationFrame;
+
+            const start = performance.now();
+            console.log('ENTERING', this.host.tagName);
 
             this.enterAnimation.play();
             this.triggerCallback("onEnter");
@@ -17566,11 +17581,15 @@
             await this.enterAnimation.finished;
             this.state = "in";
             this.triggerCallback("afterEnter");
+            console.log('ENTERED', this.host.tagName, performance.now() - start);
         }
 
         async leave() {
-            if(this.state != "in") return false;
+            if(this.state !== "in") return false;
             await animationFrame;
+
+            const start = performance.now();
+            console.log('LEAVING', this.host.tagName);
 
             this.leaveAnimation.play();
             this.triggerCallback("onLeave");
@@ -17579,27 +17598,36 @@
             this.state = "out";
             this.triggerCallback("afterLeave");
 
+            console.log('LEFT', this.host.tagName, performance.now() - start);
+
             this.host.remove();
         }
 
-        async relocate(nextRect) {
+        async relocate(cache) {
+            let nextRect = cache.rect;
+            if(this.state !== "in") return false;
+
             const props = ['left', 'top', 'width', 'height'];
             let startRect = lodash$1.exports.transform(lodash$1.exports.pick(this.host.wrapper.getBoundingClientRect(), props), (result, val, key) => result[key] = val + 'px');
             let finalRect = lodash$1.exports.transform(lodash$1.exports.pick(nextRect, props), (result, val, key) => result[key] = val + 'px');
             startRect.position = finalRect.position = 'absolute';
 
             // If the start and final rects are not the same, do play the animation
-            if(!Object.keys(startRect).every(key => startRect[key] === finalRect[key])) {
-                const relocateAnimation = this.host.wrapper
+            if(Object.keys(startRect).every(key => startRect[key] === finalRect[key])) return true;
+
+            await animationFrame;
+
+            this.triggerCallback("onEnter");
+            const relocateAnimation = this.host.wrapper
                 .animate(
                     [
                         startRect,
                         finalRect,
                     ],
-                    { duration: 300, easing: "ease-in-out" }
+                    { duration: 900, easing: "ease-in-out" }
                 );
-                console.log(`animating [${this.host.tagName}]`, startRect, finalRect);
-            }
+            await relocateAnimation.finished;
+            console.log(`relocate [${this.host.tagName}]`, startRect, finalRect);
         }
 
         shouldRelocate() {
@@ -17607,22 +17635,24 @@
         }
 
         hostConnected() {
-            window.router.addController(this);
+            document.router.addController(this);
         }
 
         hostDisconnected() {
-            window.router.removeController(this);
+            document.router.removeController(this);
         }
     }
 
     class HeroSection extends h$2 {
         static get styles() {
             return i$5`
-        :host{
-            display: block;
-        }
+            :host {
+                display: block;
+            }
             .wrapper {
-                color: var(--light-0);
+                width: 1012px;
+                margin-right: auto;
+                margin-left: auto;
             }
         `;
         }
@@ -17636,20 +17666,25 @@
             this.route = new RouteController(this);
         }
 
+        firstUpdated() {
+            this.route.setEnterAnimation({
+                keyframes: [
+                    { opacity: 0 },
+                    { opacity: 1 },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
+            this.route.setLeaveAnimation({
+                keyframes: [
+                    { opacity: 1 },
+                    { opacity: 0 },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
+        }
+
         get wrapper () {
             return this.shadowRoot.querySelector('.wrapper');
-        }
-
-        beforeEnter() {
-            this.route.setEnterAnimation(this.wrapper.animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
-        }
-
-        afterEnter() {
-            this.beforeLeave();
-        }
-
-        beforeLeave() {
-            this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
         }
 
         render() {
@@ -17664,12 +17699,17 @@
             return i$5`
             :host {
                 border-top: 1px solid var(--color-border-primary);
-                display: block;
+                background-color: var(--color-bg-canvas);
+                display: flex;
+                position: relative;
             }
             .wrapper {
                 display: grid;
+                max-width: 1280px;
+                margin-right: auto;
+                margin-left: auto;
                 grid-template-columns: 1fr 1fr;
-                grid-auto-rows: 1fr;
+                grid-auto-rows: 200px;
                 padding: 3rem;
                 gap: 3rem;
             }
@@ -17685,39 +17725,29 @@
             this.route = new RouteController(this);
         }
 
+        firstUpdated() {
+            this.route.setEnterAnimation({
+                keyframes: [
+                    { transform: "translateY(100%)" },
+                    { },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
+            this.route.setLeaveAnimation({
+                keyframes: [
+                    {  },
+                    { transform: "translateY(100%)" },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
+        }
+
         get wrapper () {
-            return this.shadowRoot.querySelector('.wrapper');
+            return this//.shadowRoot.querySelector('.wrapper');
         }
 
-        beforeEnter() {
-            this.route.setEnterAnimation(
-                this.wrapper
-                    .animate(
-                        [
-                            { transform: "translateY(100%)", opacity: 0 },
-                            { opacity: 1 },
-                        ],
-                        { duration: 300, easing: "ease-in-out" }
-                    )
-            );
-        }
+        willRelocate(cache) {
 
-        afterEnter() {
-            this.beforeLeave();
-        }
-
-        beforeLeave() {
-            this.route.setLeaveAnimation(
-                this.shadowRoot
-                    .querySelector(".wrapper")
-                    .animate(
-                        [
-                            { opacity: 1 },
-                            { transform: "translateY(100%)", opacity: 0 },
-                        ],
-                        { duration: 300, easing: "ease-in-out" }
-                    )
-            );
         }
 
         render() {
@@ -17745,20 +17775,25 @@
             this.route = new RouteController(this);
         }
 
+        firstUpdated() {
+            this.route.setEnterAnimation({
+                keyframes: [
+                    { transform: "translateX(100%)", opacity: 0 },
+                    { opacity: 1 },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
+            this.route.setLeaveAnimation({
+                keyframes: [
+                    { opacity: 1 },
+                    { transform: "translateX(100%)", opacity: 0 },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
+        }
+
         get wrapper () {
             return this.shadowRoot.querySelector('.wrapper');
-        }
-
-        beforeEnter() {
-            this.route.setEnterAnimation(this.wrapper.animate([{transform: 'translateX(100%)', opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
-        }
-
-        afterEnter() {
-            this.beforeLeave();
-        }
-
-        beforeLeave() {
-            this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {transform: 'translateX(100%)', opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
         }
 
         render() {
@@ -17791,29 +17826,31 @@
             return this.shadowRoot.querySelector('.wrapper');
         }
 
-        beforeEnter() {
-            this.route.setEnterAnimation(
-                this.wrapper
-                    .animate([{ opacity: 0 }, { opacity: 1 }], {
-                        duration: 300,
-                        easing: "ease-in-out",
-                    })
-            );
-        }
-
-        afterEnter() {
-            this.beforeLeave();
-        }
-
         beforeLeave() {
-            this.route.setLeaveAnimation(
-                this.shadowRoot
-                    .querySelector(".wrapper")
-                    .animate([{ opacity: 1 }, { opacity: 0 }], {
-                        duration: 300,
-                        easing: "ease-in-out",
-                    })
-            );
+            this.route.setLeaveAnimation({
+                keyframes: [
+                    { opacity: 1 },
+                    { opacity: 0 },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
+        }
+
+        firstUpdated() {
+            this.route.setEnterAnimation({
+                keyframes: [
+                    { opacity: 0 },
+                    { opacity: 1 },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
+            this.route.setLeaveAnimation({
+                keyframes: [
+                    { opacity: 1 },
+                    { opacity: 0 },
+                ],
+                options: { duration: 300, easing: "ease-in-out" }
+            });
         }
 
         render() {
@@ -17889,11 +17926,11 @@
             super.connectedCallback();
             if (window.parent != window) return false;
             this.addEventListener("click", this._navigate);
-            window.router.promiseCache(this.href).then(() => (this.ready = true));
+            document.router.promiseCache(this.href).then(() => (this.ready = true));
         }
 
         _navigate() {
-            if (this.ready) window.router.goTo(this.href);
+            if (this.ready) document.router.goTo(this.href);
         }
 
         render() {

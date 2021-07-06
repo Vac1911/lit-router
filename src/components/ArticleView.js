@@ -19,20 +19,25 @@ export class ArticleView extends LitElement {
         this.route = new RouteController(this);
     }
 
+    firstUpdated() {
+        this.route.setEnterAnimation({
+            keyframes: [
+                { transform: "translateX(100%)", opacity: 0 },
+                { opacity: 1 },
+            ],
+            options: { duration: 300, easing: "ease-in-out" }
+        });
+        this.route.setLeaveAnimation({
+            keyframes: [
+                { opacity: 1 },
+                { transform: "translateX(100%)", opacity: 0 },
+            ],
+            options: { duration: 300, easing: "ease-in-out" }
+        });
+    }
+
     get wrapper () {
         return this.shadowRoot.querySelector('.wrapper');
-    }
-
-    beforeEnter() {
-        this.route.setEnterAnimation(this.wrapper.animate([{transform: 'translateX(100%)', opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
-    }
-
-    afterEnter() {
-        this.beforeLeave();
-    }
-
-    beforeLeave() {
-        this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {transform: 'translateX(100%)', opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
     }
 
     render() {

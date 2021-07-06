@@ -3,8 +3,8 @@ export default class Router {
         this.controllers = new Set();
         this.cache = new Map();
         this.initialized = false;
-        // Do not make body the rootSelector!
-        this.rootSelector = _rootSelector;
+        this.rootSelector = _rootSelector; // Do not make body the rootSelector!
+        this.isReflection = (window.top !== window);
     }
 
     get controllerArr() {
@@ -19,6 +19,8 @@ export default class Router {
     }
 
     async init() {
+        if (this.isReflection) return this.skipAnimation();
+
         window.onpopstate = this.popState.bind(this);
         const promises = this.controllerArr.map((c) => c.ready);
         Promise.all(promises).then(() => {
@@ -39,6 +41,16 @@ export default class Router {
         this.selfCache();
     }
 
+    skipAnimation() {
+        const promises = this.controllerArr.map((c) => c.ready);
+        Promise.all(promises).then(() => {
+            console.log("initialize router", document.location);
+            // for (const controller of this.controllerArr) {
+            //     // controller.enter();
+            // }
+        });
+    }
+
     addController(ctrl) {
         this.controllers.add(ctrl);
     }
@@ -49,7 +61,7 @@ export default class Router {
 
     promiseCache(href) {
         return new Promise((resolve, reject) => {
-            if (window.top !== window) return reject("window not top level");
+            if (this.isReflection) return reject("window not top level");
             if (this.cache.has(href)) return resolve(this.cache.get(href));
             if (href == document.location.pathname) return resolve();
 
@@ -63,16 +75,16 @@ export default class Router {
             frame.style.position = "absolute";
             frame.style.left = "-150vw";
             frame.onload = (e) => {
-                let nextContainer = frame.contentWindow.document.querySelector(
+                let nextContainer = frame.contentDocument.querySelector(
                     this.rootSelector
                 );
                 console.log(
                     "loaded ",
                     href,
-                    frame.contentWindow.router.controllerArr
+                    frame.contentDocument.router.controllerArr
                 );
                 const frameCache = {
-                    title: frame.contentWindow.document.title,
+                    title: frame.contentDocument.title,
                     sections: Array.from(nextContainer.children).map(
                         (node, i) => ({
                             html: node.outerHTML.trim(),
@@ -112,7 +124,7 @@ export default class Router {
     }
 
     refreshCache(...routes) {
-        if (window.parent != window) return false;
+        if (this.isReflection) return false;
 
         if (!routes.length) routes = Object.keys(this.cache);
 
@@ -126,7 +138,7 @@ export default class Router {
         if(href === document.location.pathname)
             return false;
         const next = this.cache.get(href);
-        const matches = [];
+        const relocating = [];
         console.log(next, href);
 
         // Compare current sections with next sections to find sections that should relocate instead of transition
@@ -136,8 +148,8 @@ export default class Router {
                 .map((s) => s.tagName)
                 .indexOf(ctrl.host.tagName);
             if (matchIndex !== -1) {
-                ctrl.relocate(next.sections[matchIndex].rect);
-                matches.push({
+                ctrl.relocate(next.sections[matchIndex]);
+                relocating.push({
                     currentIndex: parseInt(i),
                     nextIndex: matchIndex,
                     tag: ctrl.host.tagName,
@@ -145,22 +157,24 @@ export default class Router {
             }
         }
 
-        // Get entering and exiting sections, removing sections that dont need to transition.
+        // Get entering and exiting sections, removing sections that dont need to enter/leave.
         let entering = next.sections.filter(
-                (n, i) => !matches.map((m) => m.nextIndex).includes(i)
+                (n, i) => !relocating.map((m) => m.nextIndex).includes(i)
             ),
             exiting = this.controllerArr.filter(
-                (n, i) => !matches.map((m) => m.currentIndex).includes(i)
+                (n, i) => !relocating.map((m) => m.currentIndex).includes(i)
             );
 
         const exitPromise = Promise.all(
             exiting.map((el) => el.leave())
         );
 
+        await exitPromise;
+
+        console.log('continue');
+
         for (const i in entering) {
             let section = entering[i];
-            // TODO: insert sections so that they are in the correct order
-            console.log('ENTERING', section);
             let root = document.querySelector(this.rootSelector);
             let el;
 
@@ -175,7 +189,6 @@ export default class Router {
 
                 // .insertAdjacentHTML("beforeend", section.html);
         }
-        await exitPromise;
 
         const nextState = { title: next.title, path: href };
         if (pushed) history.pushState(nextState, next.title, href);
@@ -187,16 +200,15 @@ export default class Router {
     }
 
     popState(event) {
-        if (this.cache.has()) this.goTo(event.state.path, false);
+        if (this.cache.has(event.state.path)) this.goTo(event.state.path, false);
         else document.location.reload();
     }
 }
 
-window.router = new Router("#app");
+document.router = new Router("#app");
 
 var callback = function () {
-    window.router.init();
+    document.router.init();
 };
-if (window.top === window)
-    if (document.readyState === "complete") callback();
-    else document.addEventListener("DOMContentLoaded", callback);
+if (document.readyState === "complete") callback();
+else document.addEventListener("DOMContentLoaded", callback);

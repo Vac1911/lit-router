@@ -4,11 +4,13 @@ import { RouteController } from "../lib/RouteController";
 export class HeroSection extends LitElement {
     static get styles() {
         return css`
-        :host{
-            display: block;
-        }
+            :host {
+                display: block;
+            }
             .wrapper {
-                color: var(--light-0);
+                width: 1012px;
+                margin-right: auto;
+                margin-left: auto;
             }
         `;
     }
@@ -22,20 +24,25 @@ export class HeroSection extends LitElement {
         this.route = new RouteController(this);
     }
 
+    firstUpdated() {
+        this.route.setEnterAnimation({
+            keyframes: [
+                { opacity: 0 },
+                { opacity: 1 },
+            ],
+            options: { duration: 300, easing: "ease-in-out" }
+        });
+        this.route.setLeaveAnimation({
+            keyframes: [
+                { opacity: 1 },
+                { opacity: 0 },
+            ],
+            options: { duration: 300, easing: "ease-in-out" }
+        });
+    }
+
     get wrapper () {
         return this.shadowRoot.querySelector('.wrapper');
-    }
-
-    beforeEnter() {
-        this.route.setEnterAnimation(this.wrapper.animate([{opacity: 0}, {opacity: 1}], {duration: 300, easing: 'ease-in-out'}));
-    }
-
-    afterEnter() {
-        this.beforeLeave();
-    }
-
-    beforeLeave() {
-        this.route.setLeaveAnimation(this.shadowRoot.querySelector('.wrapper').animate([{opacity: 1}, {opacity: 0}], {duration: 300, easing: 'ease-in-out'}));
     }
 
     render() {

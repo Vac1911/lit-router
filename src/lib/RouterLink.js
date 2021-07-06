@@ -29,11 +29,11 @@ export class RouterLink extends LitElement {
         super.connectedCallback();
         if (window.parent != window) return false;
         this.addEventListener("click", this._navigate);
-        window.router.promiseCache(this.href).then(() => (this.ready = true));
+        document.router.promiseCache(this.href).then(() => (this.ready = true));
     }
 
     _navigate() {
-        if (this.ready) window.router.goTo(this.href);
+        if (this.ready) document.router.goTo(this.href);
     }
 
     render() {

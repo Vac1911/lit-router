@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html data-color-mode="dark" data-dark-theme="dark_custom">
 
 <head>
     <title>Home</title>
@@ -14,7 +14,7 @@
 <body style="visibility: hidden">
     <div id="app">
         <%- include('include/navigation'); -%>
-        <hero-section class="color-bg-primary pt-lg-10 p-6 position-relative container-lg">
+        <hero-section class="pt-lg-10 py-6 position-relative">
             <h1 class="mb-2 lh-condensed-ultra">Welcome!</h1>
             <p class="f3 mb-4 color-text-secondary lh-condensed">Text go here</p>
             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
@@ -22,11 +22,10 @@
                 <button type="button" class="btn btn-secondary btn-lg px-4">Signup</button>
             </div>
         </hero-section>
-        <article-list class="color-bg-canvas-inset">
-            <div class="container">
-                <% articles.slice(0, 2).forEach(article => { %>
-                <div class="d-flex g-0 border-dark-3 rounded overflow-hidden flex-md-row m-0 shadow-sm position-relative" style="background-color: var(--dark-2);">
-                    <div class="flex-grow-1 px-4 py-3 d-flex flex-column position-static" style="gap: 1rem">
+        <article-list>
+            <% articles.slice(0, 2).forEach(article => { %>
+                <div class="d-flex g-0 border-dark-3 rounded overflow-hidden flex-md-row m-0 shadow-sm position-relative color-bg-primary">
+                    <div class="flex-1 px-4 py-3 d-flex flex-column position-static" style="gap: 1rem">
                         <div class="">
                             <span class="badge bg-primary">World</span>
                         </div>
@@ -53,8 +52,7 @@
                         </svg>
                     </div>
                 </div>
-                <% }); %>
-            </div>
+            <% }); %>
         </article-list>
     </div>
 </body>
