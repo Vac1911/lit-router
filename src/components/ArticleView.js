@@ -6,6 +6,8 @@ export class ArticleView extends LitElement {
         return css`
             .wrapper {
                 height: 100vh;
+                1px solid var(--color-border-primary);
+                background-color: var(--color-bg-secondary);
             }
         `;
     }

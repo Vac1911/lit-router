@@ -18,5 +18,10 @@ router.get("/articles", function (req, res, next) {
     res.render("article/list", { articles: Articles, DateTime: luxon.DateTime });
 });
 
+/* GET list articles. */
+router.get("/api/articles", function (req, res, next) {
+    res.json(Articles);
+});
+
 
 module.exports = router;

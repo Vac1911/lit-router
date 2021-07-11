@@ -7,6 +7,10 @@ export default class Router {
         this.isReflection = (window.top !== window);
     }
 
+    get root() {
+        return document.querySelector(this.rootSelector);
+    }
+
     get controllerArr() {
         return Array.from(this.controllers);
     }
@@ -44,10 +48,7 @@ export default class Router {
     skipAnimation() {
         const promises = this.controllerArr.map((c) => c.ready);
         Promise.all(promises).then(() => {
-            console.log("initialize router", document.location);
-            // for (const controller of this.controllerArr) {
-            //     // controller.enter();
-            // }
+            console.log("skipped animations: ", document.location.href);
         });
     }
 
@@ -74,27 +75,18 @@ export default class Router {
             frame.style.height = "100vh";
             frame.style.position = "absolute";
             frame.style.left = "-150vw";
-            frame.onload = (e) => {
-                let nextContainer = frame.contentDocument.querySelector(
-                    this.rootSelector
-                );
-                console.log(
-                    "loaded ",
-                    href,
-                    frame.contentDocument.router.controllerArr
-                );
+            frame.onload =  async (e) => {
+                const promises = frame.contentDocument.router.controllerArr.map((c) => c.ready);
+                await Promise.all(promises);
+
+                // TODO: Create function to make a cache from a document. Merge with this::selfCache
                 const frameCache = {
                     title: frame.contentDocument.title,
-                    sections: Array.from(nextContainer.children).map(
-                        (node, i) => ({
-                            html: node.outerHTML.trim(),
-                            tagName: node.tagName,
-                            rect: node.wrapper.getBoundingClientRect(),
-                            index: i
-                        })
-                    ),
-                    href: href,
+                    sections: frame.contentDocument.router.controllerArr.map(ctrl => ctrl.getCache()),
+                    href: document.location.pathname,
                 };
+
+                console.log("cached: " + frame.contentDocument.location.pathname, frameCache);
                 frame.remove();
                 this.cache.set(href, frameCache);
                 resolve(frameCache);
@@ -111,17 +103,12 @@ export default class Router {
 
         this.cache.set(document.location.pathname, {
             title: document.title,
-            sections: Array.from(
-                document.querySelector(this.rootSelector).children
-            ).map((node, i) => ({
-                html: node.outerHTML.trim(),
-                tagName: node.tagName,
-                rect: node.wrapper.getBoundingClientRect(),
-                index: i,
-            })),
+            sections: this.controllerArr.map(ctrl => ctrl.getCache()),
             href: document.location.pathname,
         });
     }
+
+
 
     refreshCache(...routes) {
         if (this.isReflection) return false;
@@ -170,8 +157,6 @@ export default class Router {
         );
 
         await exitPromise;
-
-        console.log('continue');
 
         for (const i in entering) {
             let section = entering[i];

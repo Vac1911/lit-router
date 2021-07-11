@@ -35,7 +35,7 @@ export class RouteController {
         if(document.router.isReflection) this.enterAnimation.finish();
     }
 
-    setLeaveAnimation({ keyframes, options = {} }) {;
+    setLeaveAnimation({ keyframes, options = {} }) {
         this.leaveAnimation = this.host.wrapper.animate(keyframes, options);
         this.leaveAnimation.pause();
         if(document.router.isReflection) this.leaveAnimation.finish();
@@ -109,6 +109,25 @@ export class RouteController {
         await relocateAnimation.finished;
         this.triggerCallback("relocated");
         console.log(`relocated [${this.host.tagName}]`, startRect, finalRect);
+    }
+
+    getCache() {
+        return {
+            html: this.host.outerHTML.trim(),
+            props: Object.fromEntries(Object.keys(this.host.constructor.properties)
+                .filter(key => !this.host.constructor.properties[key].state)
+                .map(key => [key, this.host[key]])),
+            tagName: this.host.tagName,
+            rect: this.host.wrapper.getBoundingClientRect(),
+            index: this._getRootIndex(this.host)
+        }
+    }
+
+    _getRootIndex(node) {
+        let root = document.router.root;
+        if(!root.contains(node))
+            return undefined;
+        return (this.host.parentElement == root) ? Array.from(root.children).indexOf(node) : this._getRootIndex(node.parentElement);
     }
 
     shouldRelocate() {

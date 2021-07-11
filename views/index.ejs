@@ -18,42 +18,10 @@
             <h1 class="mb-2 lh-condensed-ultra">Welcome!</h1>
             <p class="f3 mb-4 color-text-secondary lh-condensed">Text go here</p>
             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <button type="button" class="btn btn-primary btn-lg px-4 me-sm-3">Learn More</button>
-                <button type="button" class="btn btn-secondary btn-lg px-4">Signup</button>
+                <button type="button" class="btn btn-primary btn-lg px-4">Signup</button>
             </div>
         </hero-section>
-        <article-list>
-            <% articles.slice(0, 2).forEach(article => { %>
-                <div class="d-flex g-0 border-dark-3 rounded overflow-hidden flex-md-row m-0 shadow-sm position-relative color-bg-primary">
-                    <div class="flex-1 px-4 py-3 d-flex flex-column position-static" style="gap: 1rem">
-                        <div class="">
-                            <span class="badge bg-primary">World</span>
-                        </div>
-                        <div class="">
-                            <h2 class="h4 mb-0">
-                                <%= article.title %>
-                            </h2>
-                            <div class="text-muted small">
-                                <%= DateTime.fromSeconds(article.created_at).toRelative() %>
-                            </div>
-                        </div>
-                        <p class="mb-0">Article <%= article.id %> summary go here.</p>
-                        <div class="mt-auto">
-                            <router-link href="/articles/<%= article.id %>" class="stretched-link">
-                                Continue Reading
-                            </router-link>
-                        </div>
-                    </div>
-                    <div class="col-auto d-none d-lg-block">
-                        <svg class="bd-placeholder-img" width="200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false">
-                            <title>Placeholder</title>
-                            <rect width="100%" height="100%" fill="var(--color-bg-backdrop)"></rect>
-                            <text x="50%" y="50%" fill="#eceeef" dy=".3em">Thumbnail</text>
-                        </svg>
-                    </div>
-                </div>
-            <% }); %>
-        </article-list>
+        <article-list count="2"></article-list>
     </div>
 </body>
 
