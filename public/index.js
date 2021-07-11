@@ -75,13 +75,14 @@
 
                 this.cache.set(href, {});
 
-                // Consider using a hidden shadowDom instead of hidden iframe. Cannot use DOMParser to get a DOMRect.
+                // Cannot use DOMParser to get a DOMRect. Consider using a hidden shadowDom instead of hidden iframe.
                 let frame = document.createElement("iframe");
                 frame.src = href;
                 frame.style.width = "100vw";
                 frame.style.height = "100vh";
                 frame.style.position = "absolute";
                 frame.style.left = "-150vw";
+                frame.style.top = "0";
                 frame.onload =  async (e) => {
                     const promises = frame.contentDocument.router.controllerArr.map((c) => c.ready);
                     await Promise.all(promises);
@@ -17617,6 +17618,10 @@
         }
 
         getCache() {
+            let {top, left, ...props} = this.host.wrapper.getBoundingClientRect();
+            top += window.scrollY;
+            left += window.scrollX;
+            console.log(top, left, props);
             return {
                 html: this.host.outerHTML.trim(),
                 props: Object.fromEntries(Object.keys(this.host.constructor.properties)
@@ -24960,7 +24965,7 @@
                     { transform: "translateY(100%)" },
                     { },
                 ],
-                options: { duration: 300, easing: "ease-in-out" }
+                options: { duration: 300, easing: "ease-in" }
             });
             this.route.setLeaveAnimation({
                 keyframes: [
@@ -24997,10 +25002,13 @@
     class ArticleView extends h$2 {
         static get styles() {
             return i$5`
-            .wrapper {
-                height: 100vh;
-                1px solid var(--color-border-primary);
+            :host {
+                margin-top: 64px;
+            }
+           .card {
+                border: 1px solid var(--color-border-primary);
                 background-color: var(--color-bg-secondary);
+                padding: 32px;
             }
         `;
         }
@@ -25017,7 +25025,7 @@
         firstUpdated() {
             this.route.setEnterAnimation({
                 keyframes: [
-                    { transform: "translateX(100%)", opacity: 0 },
+                    { transform: "translateX(100vw)", opacity: 0 },
                     { opacity: 1 },
                 ],
                 options: { duration: 300, easing: "ease-in-out" }
@@ -25025,18 +25033,18 @@
             this.route.setLeaveAnimation({
                 keyframes: [
                     { opacity: 1 },
-                    { transform: "translateX(100%)", opacity: 0 },
+                    { transform: "translateX(100vw)", opacity: 0 },
                 ],
                 options: { duration: 300, easing: "ease-in-out" }
             });
         }
 
         get wrapper () {
-            return this.shadowRoot.querySelector('.wrapper');
+            return this;
         }
 
         render() {
-            return T`<div class="wrapper">
+            return T`<div class="card">
             <slot></slot>
         </div>`;
         }

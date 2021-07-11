@@ -10,6 +10,8 @@ router.get("/", function (req, res, next) {
 
 /* GET view article. */
 router.get("/articles/:id", function (req, res, next) {
+    const body = Articles.find((a) => a.id == req.params.id).body;
+    console.log(body);
     res.render("article/show", { article: Articles.find((a) => a.id == req.params.id), DateTime: luxon.DateTime });
 });
 

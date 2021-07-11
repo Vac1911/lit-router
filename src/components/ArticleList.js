@@ -53,7 +53,7 @@ export class ArticleList extends LitElement {
                 { transform: "translateY(100%)" },
                 { },
             ],
-            options: { duration: 300, easing: "ease-in-out" }
+            options: { duration: 300, easing: "ease-in" }
         });
         this.route.setLeaveAnimation({
             keyframes: [

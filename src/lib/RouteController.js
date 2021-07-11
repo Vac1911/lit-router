@@ -112,6 +112,10 @@ export class RouteController {
     }
 
     getCache() {
+        let {top, left, ...props} = this.host.wrapper.getBoundingClientRect();
+        top += window.scrollY;
+        left += window.scrollX;
+        console.log(top, left, props);
         return {
             html: this.host.outerHTML.trim(),
             props: Object.fromEntries(Object.keys(this.host.constructor.properties)

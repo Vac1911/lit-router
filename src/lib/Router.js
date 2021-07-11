@@ -68,13 +68,14 @@ export default class Router {
 
             this.cache.set(href, {});
 
-            // Consider using a hidden shadowDom instead of hidden iframe. Cannot use DOMParser to get a DOMRect.
+            // Cannot use DOMParser to get a DOMRect. Consider using a hidden shadowDom instead of hidden iframe.
             let frame = document.createElement("iframe");
             frame.src = href;
             frame.style.width = "100vw";
             frame.style.height = "100vh";
             frame.style.position = "absolute";
             frame.style.left = "-150vw";
+            frame.style.top = "0";
             frame.onload =  async (e) => {
                 const promises = frame.contentDocument.router.controllerArr.map((c) => c.ready);
                 await Promise.all(promises);

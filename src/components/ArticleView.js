@@ -4,10 +4,13 @@ import { RouteController } from "../lib/RouteController";
 export class ArticleView extends LitElement {
     static get styles() {
         return css`
-            .wrapper {
-                height: 100vh;
-                1px solid var(--color-border-primary);
+            :host {
+                margin-top: 64px;
+            }
+           .card {
+                border: 1px solid var(--color-border-primary);
                 background-color: var(--color-bg-secondary);
+                padding: 32px;
             }
         `;
     }
@@ -24,7 +27,7 @@ export class ArticleView extends LitElement {
     firstUpdated() {
         this.route.setEnterAnimation({
             keyframes: [
-                { transform: "translateX(100%)", opacity: 0 },
+                { transform: "translateX(100vw)", opacity: 0 },
                 { opacity: 1 },
             ],
             options: { duration: 300, easing: "ease-in-out" }
@@ -32,18 +35,18 @@ export class ArticleView extends LitElement {
         this.route.setLeaveAnimation({
             keyframes: [
                 { opacity: 1 },
-                { transform: "translateX(100%)", opacity: 0 },
+                { transform: "translateX(100vw)", opacity: 0 },
             ],
             options: { duration: 300, easing: "ease-in-out" }
         });
     }
 
     get wrapper () {
-        return this.shadowRoot.querySelector('.wrapper');
+        return this;
     }
 
     render() {
-        return html`<div class="wrapper">
+        return html`<div class="card">
             <slot></slot>
         </div>`;
     }
